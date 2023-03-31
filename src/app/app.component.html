@@ -19,8 +19,8 @@
   <ng-container *ngIf="name === ADMIN_NAME">
     <h2 class=admin>Für den Moderator</h2>
     <div class=danger>
-      <button mat-raised-button color="secondary" (click)="reset('reset')" [disabled]="!dices?.length">Alle Würfel zurücksetzen</button>
-      <button mat-raised-button color="secondary" (click)="reset('delete')" [disabled]="!dices?.length">Alle Nutzer löschen</button>
+      <button mat-raised-button color="primary" (click)="reset('reset')" [disabled]="!dices?.length">Alle Würfel zurücksetzen</button>
+      <button mat-raised-button color="warn" (click)="reset('delete')" [disabled]="!dices?.length">Alle Nutzer löschen</button>
     </div>
     <hr>
   </ng-container>
