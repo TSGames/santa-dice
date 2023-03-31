@@ -11,6 +11,7 @@ export class AppComponent {
   snow:any=[];
 
   static API_URL = 'api.php';
+  readonly ADMIN_NAME = 'Admin';
   name: string;
   isAdded = false;
   dices: Dice[];

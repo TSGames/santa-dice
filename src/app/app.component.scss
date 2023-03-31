@@ -48,6 +48,7 @@
   display: flex;
   width: 100%;
   justify-content: space-evenly;
+  padding-bottom: 30px;
 }
 
 .snow {
@@ -65,11 +66,18 @@
     left:0;
     top:0;
     position: fixed;
-    opacity: 0.3;
     width: 100%;
     height: 100%;
-    background-image: url('../assets/landscape.svg');
     background-attachment: fixed;
     background-size: cover;
     overflow: hidden;
+}
+.bg-winter {
+    opacity: 0.3;
+    background-image: url('../assets/landscape.svg'); 
+}
+.bg-eastern {
+    opacity: 0.5;
+    background-image: url('../assets/eastern.svg');
+    background-position: 50% 100%;
 }
