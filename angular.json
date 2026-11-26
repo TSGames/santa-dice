@@ -28,6 +28,12 @@
               "src/assets"
             ],
             "styles": [
+              "node_modules/@fontsource/merriweather/700.css",
+              "node_modules/@fontsource/merriweather/900.css",
+              "node_modules/@fontsource/source-sans-3/400.css",
+              "node_modules/@fontsource/source-sans-3/500.css",
+              "node_modules/@fontsource/source-sans-3/600.css",
+              "node_modules/@fontsource/source-sans-3/700.css",
               "src/styles.scss"
             ],
             "scripts": []
@@ -109,6 +115,12 @@
               "src/assets"
             ],
             "styles": [
+              "node_modules/@fontsource/merriweather/700.css",
+              "node_modules/@fontsource/merriweather/900.css",
+              "node_modules/@fontsource/source-sans-3/400.css",
+              "node_modules/@fontsource/source-sans-3/500.css",
+              "node_modules/@fontsource/source-sans-3/600.css",
+              "node_modules/@fontsource/source-sans-3/700.css",
               "src/styles.scss"
             ],
             "scripts": []
