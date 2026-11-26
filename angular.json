@@ -25,7 +25,6 @@
             "aot": true,
             "assets": [
               "src/favicon.ico",
-              "src/api.php",
               "src/assets"
             ],
             "styles": [
@@ -60,20 +59,38 @@
                   "maximumWarning": "6kb",
                   "maximumError": "10kb"
                 }
+              ],
+              "assets": [
+                "src/favicon.ico",
+                "src/api.php",
+                "src/assets"
               ]
+            },
+            "development": {
+              "buildOptimizer": false,
+              "optimization": false,
+              "vendorChunk": true,
+              "extractLicenses": false,
+              "sourceMap": true,
+              "namedChunks": true
             }
-          }
+          },
+          "defaultConfiguration": "production"
         },
         "serve": {
           "builder": "@angular-devkit/build-angular:dev-server",
           "options": {
-            "browserTarget": "santa-dice:build"
+            "proxyConfig": "proxy.conf.json"
           },
           "configurations": {
             "production": {
               "browserTarget": "santa-dice:build:production"
+            },
+            "development": {
+              "browserTarget": "santa-dice:build:development"
             }
-          }
+          },
+          "defaultConfiguration": "development"
         },
         "extract-i18n": {
           "builder": "@angular-devkit/build-angular:extract-i18n",

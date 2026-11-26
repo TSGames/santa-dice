@@ -4,6 +4,8 @@
   "scripts": {
     "ng": "ng",
     "start": "ng serve",
+    "backend": "docker compose -f docker-compose.dev.yml up",
+    "backend:reset": "docker compose -f docker-compose.dev.yml down -v",
     "build": "ng build",
     "test": "ng test",
     "lint": "ng lint",

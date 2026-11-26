@@ -1,0 +1,16 @@
+# Local PHP backend for `npm start` (ng serve proxies /api.php to it).
+# Usage: npm run backend   (or: docker compose -f docker-compose.dev.yml up)
+services:
+  api:
+    image: php:8.3-apache
+    ports:
+      - "8081:80"
+    environment:
+      DATA_DIR: /data
+    volumes:
+      - ./src/api.php:/var/www/html/api.php:ro
+      - dev-data:/data
+    command: sh -c "chown www-data:www-data /data && apache2-foreground"
+
+volumes:
+  dev-data:

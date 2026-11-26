@@ -35,3 +35,12 @@ docker run -d -p 8080:80 -v santa-dice-data:/data ghcr.io/torsten-simon/santa-di
 ```
 
 Data is stored in `/data/data.json` (configurable via `DATA_DIR`).
+
+## Local development
+
+```sh
+npm run backend   # PHP backend on :8081 (src/api.php is mounted live)
+npm start         # ng serve on :4200, proxies /api.php to the backend
+```
+
+`npm run backend:reset` stops the backend and deletes its data volume.
