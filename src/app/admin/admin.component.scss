@@ -1,0 +1,137 @@
+.group {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  mat-form-field {
+    flex-grow: 1;
+  }
+  button {
+    height: 56px;
+  }
+}
+
+.item-form {
+  display: flex;
+  flex-direction: column;
+}
+
+.upload {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 16px;
+  img {
+    width: 96px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 10px;
+  }
+  .file {
+    cursor: pointer;
+    input {
+      display: none;
+    }
+    span {
+      display: inline-block;
+      padding: 8px 16px;
+      border: 1px solid rgba(0, 0, 0, .25);
+      border-radius: 8px;
+    }
+  }
+  .hint {
+    font-size: .85rem;
+  }
+}
+
+.count {
+  font-size: .9rem;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 8px;
+}
+
+.empty {
+  color: var(--muted);
+}
+
+.items {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  li {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(0, 0, 0, .08);
+    &.assigned {
+      opacity: .65;
+    }
+  }
+  img, .no-image {
+    width: 56px;
+    height: 56px;
+    flex-shrink: 0;
+    object-fit: cover;
+    border-radius: 8px;
+    background: rgba(0, 0, 0, .05);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+  }
+  .item-text {
+    flex-grow: 1;
+    min-width: 0;
+    display: flex;
+    flex-direction: column;
+    .link {
+      font-size: .8rem;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+  }
+  .item-actions {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+}
+
+.assign-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.assign-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  .day {
+    width: 2em;
+    text-align: right;
+    font-weight: 500;
+  }
+  select {
+    flex-grow: 1;
+    min-width: 0;
+    padding: 6px;
+    border-radius: 6px;
+    border: 1px solid rgba(0, 0, 0, .25);
+    background: #fff;
+    font: inherit;
+  }
+}
+
+@media (max-width: 480px) {
+  .group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .items li {
+    flex-wrap: wrap;
+  }
+}

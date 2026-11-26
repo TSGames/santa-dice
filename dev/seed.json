@@ -1,14 +1,324 @@
-[
-  {"name": "Anna", "number": [6, 5]},
-  {"name": "Ben", "number": [3, 2]},
-  {"name": "Carla", "number": [5, 6]},
-  {"name": "Dieter", "number": null},
-  {"name": "Eva", "number": [4, 4]},
-  {"name": "Fritz", "number": [1, 1]},
-  {"name": "Greta", "number": [6, 2]},
-  {"name": "Hans", "number": null},
-  {"name": "Ida", "number": [2, 6]},
-  {"name": "Jonas", "number": [3, 1]},
-  {"name": "Klara-Sophie von Lichtenberg", "number": null},
-  {"name": "Lukas", "number": [5, 4]}
-]
+{
+  "items": [
+    {
+      "id": "tasse",
+      "title": "Weihnachtstasse",
+      "description": "Große Tasse mit Rentier-Motiv.",
+      "link": "https://example.com/tasse",
+      "image": "uploads/tasse.png",
+      "assignedDay": 1
+    },
+    {
+      "id": "socken",
+      "title": "Kuschelsocken",
+      "description": "Dicke Wollsocken für kalte Füße.",
+      "link": "https://example.com/socken",
+      "image": "uploads/socken.png",
+      "assignedDay": 2
+    },
+    {
+      "id": "video",
+      "title": "Lustiges Weihnachtsvideo",
+      "description": "Fünf Minuten Lachen garantiert.",
+      "link": "https://example.com/video",
+      "image": "uploads/video.png",
+      "assignedDay": 3
+    },
+    {
+      "id": "schoko",
+      "title": "Schokoladen-Adventsbox",
+      "description": "Feine Pralinen zum Teilen (oder nicht).",
+      "link": "https://example.com/schoko",
+      "image": "uploads/schoko.png",
+      "assignedDay": 5
+    },
+    {
+      "id": "buch",
+      "title": "Kurzgeschichten-Buch",
+      "description": "Winterliche Geschichten für zwischendurch.",
+      "link": "https://example.com/buch",
+      "image": "uploads/buch.png",
+      "assignedDay": 6
+    },
+    {
+      "id": "kerze",
+      "title": "Duftkerze Zimt",
+      "description": "Riecht nach Weihnachtsmarkt.",
+      "link": "https://example.com/kerze",
+      "image": "uploads/kerze.png",
+      "assignedDay": 8
+    },
+    {
+      "id": "puzzle",
+      "title": "Mini-Puzzle",
+      "description": "500 Teile Winterlandschaft.",
+      "link": "https://example.com/puzzle",
+      "image": "uploads/puzzle.png",
+      "assignedDay": null
+    },
+    {
+      "id": "film",
+      "title": "Filmtipp: Klassiker",
+      "description": "Der Weihnachtsfilm-Klassiker zum Streamen.",
+      "link": "https://example.com/film",
+      "image": "uploads/film.png",
+      "assignedDay": null
+    },
+    {
+      "id": "tee",
+      "title": "Wintertee-Set",
+      "description": "Drei Sorten Tee mit Gewürzen.",
+      "link": "https://example.com/tee",
+      "image": "uploads/tee.png",
+      "assignedDay": null
+    },
+    {
+      "id": "muetze",
+      "title": "Bommelmütze",
+      "description": "Warm und ein bisschen albern.",
+      "link": "https://example.com/muetze",
+      "image": "uploads/muetze.png",
+      "assignedDay": null
+    }
+  ],
+  "days": {
+    "1": {
+      "participants": [
+        "Anna",
+        "Ben",
+        "Carla"
+      ],
+      "rounds": [
+        {
+          "players": [
+            "Anna",
+            "Ben",
+            "Carla"
+          ],
+          "rolls": {
+            "Anna": [
+              6,
+              5
+            ],
+            "Ben": [
+              3,
+              2
+            ],
+            "Carla": [
+              4,
+              4
+            ]
+          },
+          "closed": true
+        }
+      ],
+      "winner": "Anna",
+      "itemId": "tasse",
+      "pickedFor": 2
+    },
+    "2": {
+      "participants": [
+        "Anna",
+        "Ben",
+        "Carla",
+        "Dieter"
+      ],
+      "rounds": [
+        {
+          "players": [
+            "Anna",
+            "Ben",
+            "Carla",
+            "Dieter"
+          ],
+          "rolls": {
+            "Anna": [
+              6,
+              4
+            ],
+            "Ben": [
+              5,
+              5
+            ],
+            "Carla": [
+              2,
+              3
+            ],
+            "Dieter": [
+              1,
+              4
+            ]
+          },
+          "closed": true
+        },
+        {
+          "players": [
+            "Anna",
+            "Ben"
+          ],
+          "rolls": {
+            "Anna": [
+              3,
+              3
+            ],
+            "Ben": [
+              6,
+              2
+            ]
+          },
+          "closed": true
+        }
+      ],
+      "winner": "Ben",
+      "itemId": "socken",
+      "pickedFor": 3
+    },
+    "3": {
+      "participants": [
+        "Eva",
+        "Fritz"
+      ],
+      "rounds": [
+        {
+          "players": [
+            "Eva",
+            "Fritz"
+          ],
+          "rolls": {
+            "Eva": [
+              2,
+              2
+            ],
+            "Fritz": [
+              5,
+              6
+            ]
+          },
+          "closed": true
+        }
+      ],
+      "winner": "Fritz",
+      "itemId": "video",
+      "pickedFor": null
+    },
+    "5": {
+      "participants": [
+        "Greta",
+        "Hans",
+        "Ida"
+      ],
+      "rounds": [
+        {
+          "players": [
+            "Greta",
+            "Hans",
+            "Ida"
+          ],
+          "rolls": {
+            "Greta": [
+              6,
+              6
+            ],
+            "Hans": [
+              6,
+              6
+            ],
+            "Ida": [
+              1,
+              2
+            ]
+          },
+          "closed": false
+        }
+      ],
+      "winner": null,
+      "itemId": "schoko",
+      "pickedFor": null
+    },
+    "6": {
+      "participants": [
+        "Jonas",
+        "Klara-Sophie von Lichtenberg",
+        "Lukas"
+      ],
+      "rounds": [
+        {
+          "players": [
+            "Jonas",
+            "Klara-Sophie von Lichtenberg",
+            "Lukas"
+          ],
+          "rolls": {
+            "Jonas": [
+              4,
+              5
+            ],
+            "Klara-Sophie von Lichtenberg": [
+              2,
+              1
+            ],
+            "Lukas": [
+              3,
+              3
+            ]
+          },
+          "closed": false
+        }
+      ],
+      "winner": null,
+      "itemId": "buch",
+      "pickedFor": null
+    },
+    "7": {
+      "participants": [
+        "Anna",
+        "Ben",
+        "Carla",
+        "Dieter"
+      ],
+      "rounds": [
+        {
+          "players": [
+            "Anna",
+            "Ben",
+            "Carla",
+            "Dieter"
+          ],
+          "rolls": {
+            "Anna": [
+              3,
+              4
+            ],
+            "Carla": [
+              5,
+              1
+            ]
+          },
+          "closed": false
+        }
+      ],
+      "winner": null,
+      "itemId": null,
+      "pickedFor": null
+    },
+    "8": {
+      "participants": [
+        "Eva",
+        "Greta"
+      ],
+      "rounds": [
+        {
+          "players": [
+            "Eva",
+            "Greta"
+          ],
+          "rolls": {},
+          "closed": false
+        }
+      ],
+      "winner": null,
+      "itemId": "kerze",
+      "pickedFor": null
+    }
+  }
+}

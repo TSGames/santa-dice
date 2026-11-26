@@ -1,0 +1,90 @@
+<a routerLink="/" class=back>← Kalender</a>
+<h1>Admin</h1>
+
+<div class=error *ngIf="error">{{error}}</div>
+
+<!-- Login -->
+<section class=card *ngIf="!items">
+  <h2>Anmelden</h2>
+  <form class=group (ngSubmit)="login()">
+    <mat-form-field appearance="outline">
+      <mat-label>Admin-Token</mat-label>
+      <input matInput type="password" name="token" [(ngModel)]="tokenInput" autocomplete="current-password">
+    </mat-form-field>
+    <button mat-raised-button color="primary" type="submit" [disabled]="!tokenInput || busy">Anmelden</button>
+  </form>
+</section>
+
+<ng-container *ngIf="items">
+  <!-- Formular -->
+  <section class=card>
+    <h2>{{form.id ? 'Preis bearbeiten' : 'Neuer Preis'}}</h2>
+    <form (ngSubmit)="save()" class=item-form>
+      <mat-form-field appearance="outline">
+        <mat-label>Titel</mat-label>
+        <input matInput name="title" [(ngModel)]="form.title" required maxlength="120">
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Beschreibung</mat-label>
+        <textarea matInput name="description" [(ngModel)]="form.description" rows="3" maxlength="1000"></textarea>
+      </mat-form-field>
+      <mat-form-field appearance="outline">
+        <mat-label>Link</mat-label>
+        <input matInput name="link" type="url" [(ngModel)]="form.link" placeholder="https://…">
+      </mat-form-field>
+      <div class=upload>
+        <img *ngIf="preview" [src]="preview" alt="Vorschau">
+        <label class=file>
+          <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="onFile($event)">
+          <span>{{preview ? 'Bild ändern' : 'Bild hochladen'}}</span>
+        </label>
+        <span class=hint>JPEG, PNG, WebP oder GIF, max. 5 MB</span>
+      </div>
+      <div class=actions>
+        <button mat-button type="button" (click)="reset()" *ngIf="form.id">Abbrechen</button>
+        <button mat-raised-button color="primary" type="submit" [disabled]="!form.title?.trim() || busy">Speichern</button>
+      </div>
+    </form>
+  </section>
+
+  <!-- Liste -->
+  <section class=card>
+    <h2>Preisliste <span class=count>{{freeCount}} frei von {{items.length}}</span></h2>
+    <div class=empty *ngIf="!items.length">Noch keine Preise erfasst.</div>
+    <ul class=items>
+      <li *ngFor="let i of items; trackBy: trackById" [class.assigned]="i.assignedDay">
+        <img *ngIf="i.image; else noImage" [src]="i.image" alt="">
+        <ng-template #noImage><span class=no-image>🎁</span></ng-template>
+        <div class=item-text>
+          <strong>{{i.title}}</strong>
+          <span class=hint>{{i.assignedDay ? 'Türchen ' + i.assignedDay : 'frei'}}</span>
+          <a *ngIf="i.link" [href]="i.link" target="_blank" rel="noopener" class=link>{{i.link}}</a>
+        </div>
+        <div class=item-actions>
+          <button mat-button (click)="edit(i)">Bearbeiten</button>
+          <button mat-button color="warn" (click)="remove(i)" [disabled]="!!i.assignedDay || busy"
+                  [title]="i.assignedDay ? 'Hängt an einem Türchen' : ''">Löschen</button>
+        </div>
+      </li>
+    </ul>
+  </section>
+
+  <!-- Zuordnung -->
+  <section class=card>
+    <h2>Türchen befüllen</h2>
+    <p class=hint>Normalerweise wählt die Gewinner*in den Preis fürs nächste Türchen. Hier kann der Admin selbst zuordnen, z. B. für Türchen 1.</p>
+    <div class=assign-grid>
+      <label *ngFor="let d of days" class=assign-row>
+        <span class=day>{{d}}</span>
+        <select [ngModel]="itemForDay(d)" (ngModelChange)="assign(d, $event)" [disabled]="busy">
+          <option value="">– kein Preis –</option>
+          <option *ngFor="let i of optionsForDay(d); trackBy: trackById" [value]="i.id">{{i.title}}</option>
+        </select>
+      </label>
+    </div>
+  </section>
+
+  <div class=actions>
+    <button mat-button (click)="logout()">Abmelden</button>
+  </div>
+</ng-container>

@@ -10,7 +10,10 @@ Technische Leitplanken für dieses Projekt. Die fachliche Spezifikation des lauf
 
 ## Stack
 
-- Frontend: Angular 15 + Angular Material, eine Komponente `AppComponent` plus `DieComponent` (3D-Würfel, wiederverwenden).
+- Frontend: Angular 15 + Angular Material, Hash-Routing (`/#/`, `/#/tuer/:day`, `/#/admin`).
+  - `ApiService`: alle API-Aufrufe, Polling des Kalenders (2 s), Name und Admin-Token im `localStorage`.
+  - `CalendarComponent`, `DoorComponent`, `AdminComponent`: die drei Seiten.
+  - `DieComponent`: 3D-Würfel (wiederverwenden), `SnowComponent`: Schnee als Canvas außerhalb der Change Detection.
 - Backend: eine Datei `src/api.php`, Daten als JSON in `DATA_DIR` (Default `.`, im Docker-Image `/data`), Schreibzugriffe mit `flock`.
 - Deployment: `Dockerfile` (php:8.3-apache), GitHub Actions (`.github/workflows/docker.yml`) pusht das Image nach ghcr.io.
 
@@ -19,9 +22,13 @@ Technische Leitplanken für dieses Projekt. Die fachliche Spezifikation des lauf
 ```sh
 npm run backend        # PHP-Backend auf :8081, src/api.php live gemountet
 npm start              # ng serve auf :4200, Proxy /api.php → :8081
-npm run backend:seed   # Testdaten aus dev/seed.json laden
+npm run backend:seed   # Testdaten aus dev/seed.json + dev/uploads/ laden
 npm run backend:reset  # Backend stoppen und Daten-Volume löschen
 ```
+
+Das Dev-Backend setzt „heute“ fest auf `2026-12-08` (`FAKE_TODAY`, überschreibbar: `FAKE_TODAY=2026-12-15 npm run backend`) und nutzt das Admin-Token `dev` (Admin-Bereich: `/#/admin`).
+
+`dev/seed.json` deckt alle Türchen-Zustände ab (entschieden, nach Stechen entschieden, Auswahl ausstehend, Gleichstand, eindeutig wartend, laufend, heute, gesperrt). Bei Änderungen am Datenmodell mitpflegen.
 
 `ng build` baut standardmäßig für Production. Nur dieser Build kopiert `api.php` nach `dist/`.
 
@@ -81,4 +88,4 @@ Schreibende Aktionen per POST.
 - Kalenderansicht mit 24 Türchen. Die Tagesmischung erfolgt deterministisch mit dem Datum als Seed, damit alle dieselbe Anordnung sehen.
 - Türchen-Detail: Eintragen, Würfeln (bestehender Flow mit `DieComponent`), Rundenübersicht inkl. Stechen, Preis-Hervorhebung.
 - Admin-Bereich als eigene Route `/admin` (Token-Eingabe, Speicherung im `localStorage`).
-- Rangliste: berechnete Listen cachen und `trackBy` nutzen. Die Schnee-Animation löst 60×/s Change Detection aus, sonst flackert die Liste.
+- Listen immer mit `trackBy` rendern und abgeleitete Daten nur bei neuen Server-Daten berechnen (nicht in Gettern, die neue Objekte erzeugen), sonst baut `*ngFor` DOM und Würfel ständig neu auf.

@@ -1,5 +1,6 @@
 # Local PHP backend for `npm start` (ng serve proxies /api.php to it).
 # Usage: npm run backend   (or: docker compose -f docker-compose.dev.yml up)
+# FAKE_TODAY pins "today" for testing, e.g. FAKE_TODAY=2026-12-08 npm run backend
 services:
   api:
     image: php:8.3-apache
@@ -7,6 +8,8 @@ services:
       - "8081:80"
     environment:
       DATA_DIR: /data
+      ADMIN_TOKEN: ${ADMIN_TOKEN:-dev}
+      FAKE_TODAY: ${FAKE_TODAY:-2026-12-08}
     volumes:
       - ./src/api.php:/var/www/html/api.php:ro
       - dev-data:/data

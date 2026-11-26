@@ -1,0 +1,138 @@
+<div class=confetti aria-hidden="true" *ngIf="confetti.length">
+  <i *ngFor="let c of confetti" [style.left.%]="c.x" [style.background]="c.color"
+     [style.animation-delay.ms]="c.delay" [style.animation-duration.ms]="c.duration" [style.--r]="c.rotate + 'deg'"></i>
+</div>
+
+<a routerLink="/" class=back>← Kalender</a>
+
+<ng-container *ngIf="calendar">
+  <div *ngIf="!day || !day.open" class=card>
+    <h2>Türchen {{day?.day}}</h2>
+    <p class=hint>Dieses Türchen ist noch geschlossen.</p>
+  </div>
+
+  <ng-container *ngIf="day?.open && day as d">
+    <h1>Türchen {{d.day}}</h1>
+
+    <div class=error *ngIf="error">{{error}}</div>
+
+    <!-- Preis -->
+    <section class="card prize" [class.won]="decided">
+      <ng-container *ngIf="decided">
+        <div class=won-by>🏆 Gewonnen von <strong>{{d.winner}}</strong></div>
+      </ng-container>
+      <ng-container *ngIf="d.item; else noItem">
+        <div class=prize-label *ngIf="!decided">Darum wird gewürfelt</div>
+        <img *ngIf="d.item.image" [src]="d.item.image" [alt]="d.item.title" class=prize-image>
+        <h2>{{d.item.title}}</h2>
+        <p class=prize-text *ngIf="d.item.description">{{d.item.description}}</p>
+        <a *ngIf="d.item.link" mat-raised-button color="primary" [href]="d.item.link" target="_blank" rel="noopener">Ansehen</a>
+      </ng-container>
+      <ng-template #noItem>
+        <h2>Überraschung</h2>
+        <p class=hint>Der Preis für dieses Türchen steht noch nicht fest.</p>
+      </ng-template>
+    </section>
+
+    <!-- Eintragen -->
+    <section class="card hero" *ngIf="canJoin">
+      <h2>Mitmachen!</h2>
+      <p class=hint>Trag dich ein und würfle mit zwei Würfeln. Die höchste Augensumme gewinnt.</p>
+      <form class=group (ngSubmit)="join()">
+        <mat-form-field appearance="outline">
+          <mat-label>Dein Name</mat-label>
+          <input matInput type="text" name="name" [(ngModel)]="nameInput" autocomplete="off" maxlength="60">
+        </mat-form-field>
+        <button mat-raised-button color="primary" type="submit" [disabled]="!nameInput.trim() || busy">Eintragen</button>
+      </form>
+    </section>
+
+    <!-- Würfeln -->
+    <section class="card hero mine" *ngIf="canRoll || isDicing">
+      <h2>{{isTiebreak ? 'Stechen – du bist dran' : 'Du bist dran'}}</h2>
+      <div class=mine-name>{{me}}</div>
+      <div class=big-dice>
+        <app-die [value]="myRoll?.[0] ?? null" [rolling]="isDicing" [size]="76"></app-die>
+        <app-die [value]="myRoll?.[1] ?? null" [rolling]="isDicing" [size]="76" [delay]="120"></app-die>
+      </div>
+      <button mat-raised-button color="primary" class=roll-button (click)="roll()" [disabled]="isDicing">
+        {{isDicing ? 'Würfelt …' : 'Würfeln!'}}
+      </button>
+      <button mat-button class=switch (click)="switchName()" [disabled]="isDicing">Anderer Name</button>
+    </section>
+
+    <!-- Eigenes Ergebnis -->
+    <section class="card hero mine done" *ngIf="!isDicing && !decided && myCurrentRoll as r">
+      <h2>Dein Wurf{{isTiebreak ? ' im Stechen' : ''}}</h2>
+      <div class=big-dice>
+        <app-die *ngFor="let n of r.roll; trackBy: trackByIndex" [value]="n" [size]="76"></app-die>
+      </div>
+      <div class=sum [class.pop]="shownSum !== null">{{shownSum ?? r.total}}</div>
+      <p class=hint *ngIf="current!.waiting.length">Warte auf {{current!.waiting.length}} weitere …</p>
+    </section>
+
+    <!-- Auswahl fürs nächste Türchen -->
+    <section class="card pick" *ngIf="isWinner && d.pickTarget">
+      <h2>Du darfst auswählen!</h2>
+      <p class=hint>Such den Preis für Türchen {{d.pickTarget}} aus.</p>
+      <div class=empty *ngIf="available && !available.length">Keine freien Preise mehr in der Liste.</div>
+      <div class=pick-grid>
+        <button *ngFor="let i of available; trackBy: trackById" type=button class=pick-item
+                [class.selected]="selectedItem?.id === i.id" (click)="selectedItem = i">
+          <img *ngIf="i.image" [src]="i.image" alt="">
+          <span class=pick-title>{{i.title}}</span>
+        </button>
+      </div>
+      <div class=actions *ngIf="selectedItem">
+        <a *ngIf="selectedItem.link" mat-button [href]="selectedItem.link" target="_blank" rel="noopener">Link ansehen</a>
+        <button mat-raised-button color="primary" (click)="pick()" [disabled]="busy">„{{selectedItem.title}}“ für Türchen {{d.pickTarget}} wählen</button>
+      </div>
+    </section>
+    <section class="card" *ngIf="decided && d.pickedFor">
+      <p class=hint>{{d.winner}} hat den Preis für Türchen {{d.pickedFor}} ausgewählt.</p>
+    </section>
+
+    <!-- Runden -->
+    <section class="card list" *ngIf="rounds.length">
+      <ng-container *ngFor="let round of rounds.slice().reverse(); trackBy: trackByIndex">
+        <h2>{{round.index === 0 ? 'Rangliste' : 'Stechen ' + round.index}}
+          <span class=round-state *ngIf="round.closed">abgeschlossen</span></h2>
+        <div class=tie-banner *ngIf="round === current && d.roundComplete && (d.leaders?.length || 0) > 1 && !decided">
+          Gleichstand an der Spitze: {{d.leaders!.join(', ')}} – Stechen!
+        </div>
+        <div class=empty *ngIf="!round.players.length">Noch niemand eingetragen.</div>
+        <ol class=ranking>
+          <li *ngFor="let r of round.ranking; trackBy: trackByName" class=row
+              [class.first]="r.rank === 1" [class.me]="r.name === me" [class.winner]="r.name === d.winner && round === current">
+            <span class=pos>{{r.rank === 1 ? '🏆' : r.rank + '.'}}</span>
+            <span class=name>{{r.name}}<span class=tie-tag *ngIf="r.tie">gleichauf</span></span>
+            <span class=dice-pair><img *ngFor="let n of r.roll; trackBy: trackByIndex" src="assets/dice-{{n}}.svg" alt="{{n}}"></span>
+            <span class=total>{{r.total}}</span>
+          </li>
+        </ol>
+        <ng-container *ngIf="round.waiting.length">
+          <h3>{{round.closed ? 'Nicht gewürfelt' : 'Noch nicht gewürfelt'}} ({{round.waiting.length}})</h3>
+          <ul class=pending>
+            <li *ngFor="let p of round.waiting; trackBy: trackByName" [class.me]="p === me">{{p}}</li>
+          </ul>
+        </ng-container>
+      </ng-container>
+    </section>
+
+    <!-- Admin -->
+    <section class="card admin" *ngIf="calendar.admin">
+      <h2>Admin</h2>
+      <div class=actions>
+        <button mat-stroked-button (click)="admin('close')" [disabled]="busy || decided || current?.closed">Runde schließen</button>
+        <button mat-raised-button color="primary" (click)="admin('winner')"
+                [disabled]="busy || decided || !d.roundComplete || d.leaders?.length !== 1">
+          Gewinner*in festlegen{{d.leaders?.length === 1 && d.roundComplete ? ': ' + d.leaders![0] : ''}}
+        </button>
+        <button mat-raised-button color="accent" (click)="admin('tiebreak')"
+                [disabled]="busy || decided || !d.roundComplete || (d.leaders?.length || 0) < 2">Stechen starten</button>
+        <button mat-button color="warn" (click)="admin('day-reset')" [disabled]="busy">Türchen zurücksetzen</button>
+      </div>
+      <p class=hint>Preis zuordnen: im <a routerLink="/admin">Admin-Bereich</a>.</p>
+    </section>
+  </ng-container>
+</ng-container>

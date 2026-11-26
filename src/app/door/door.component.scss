@@ -1,0 +1,274 @@
+.hero {
+  text-align: center;
+}
+
+.group {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+  mat-form-field {
+    flex-grow: 1;
+  }
+  button {
+    height: 56px;
+  }
+}
+
+/* Preis */
+.prize {
+  text-align: center;
+  .prize-label {
+    font-size: .85rem;
+    text-transform: uppercase;
+    letter-spacing: .05em;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+  .prize-image {
+    max-width: 100%;
+    max-height: 220px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    object-fit: contain;
+  }
+  .prize-text {
+    white-space: pre-line;
+    margin: 0 0 16px;
+  }
+  &.won {
+    border: 3px solid var(--gold);
+    background: linear-gradient(180deg, var(--gold-soft), var(--card) 60%);
+    .prize-image {
+      max-height: 320px;
+    }
+    h2 {
+      font-size: 1.6rem;
+    }
+  }
+  .won-by {
+    font-size: 1.2rem;
+    margin-bottom: 16px;
+  }
+}
+
+/* Würfeln */
+.mine {
+  border: 2px solid var(--red);
+  .mine-name {
+    font-size: 1.1rem;
+    color: var(--muted);
+  }
+  .big-dice {
+    display: flex;
+    justify-content: center;
+    gap: 36px;
+    margin: 16px 0;
+  }
+  .roll-button {
+    font-size: 1.2rem;
+    padding: 0 40px;
+    height: 52px;
+  }
+  .switch {
+    display: block;
+    margin: 8px auto 0;
+    color: var(--muted);
+  }
+  &.done {
+    border-color: var(--gold);
+  }
+  .sum {
+    display: inline-block;
+    font-size: 3rem;
+    font-weight: 500;
+    line-height: 1;
+    transition: transform .3s ease, color .3s ease;
+    &.pop {
+      color: var(--red);
+      transform: scale(1.15);
+    }
+  }
+}
+
+/* Auswahl */
+.pick-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 12px 0 16px;
+}
+
+.pick-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, .04);
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  img {
+    width: 100%;
+    height: 90px;
+    object-fit: cover;
+    border-radius: 8px;
+  }
+  &.selected {
+    border-color: var(--red);
+    background: var(--red-soft);
+  }
+}
+
+/* Rangliste */
+.round-state {
+  font-size: .8rem;
+  font-weight: 400;
+  color: var(--muted);
+  margin-left: 8px;
+}
+
+.list h2:not(:first-child) {
+  margin-top: 24px;
+}
+
+.tie-banner {
+  background: var(--gold-soft);
+  border: 1px solid var(--gold);
+  border-radius: 8px;
+  padding: 8px 12px;
+  margin-bottom: 12px;
+  font-weight: 500;
+  text-align: center;
+}
+
+.empty {
+  color: var(--muted);
+  padding: 8px 0;
+}
+
+.ranking {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  .row {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    padding: 8px 12px;
+    border-radius: 10px;
+    min-height: 44px;
+    &:nth-child(odd) {
+      background: rgba(0, 0, 0, .03);
+    }
+    &.first {
+      background: var(--gold-soft);
+      font-weight: 500;
+    }
+    &.me {
+      outline: 2px solid var(--red);
+    }
+    &.winner {
+      background: var(--gold);
+      color: #fff;
+      .pos, .tie-tag {
+        color: #fff;
+      }
+    }
+  }
+  .pos {
+    width: 2em;
+    text-align: right;
+    color: var(--muted);
+  }
+  .name {
+    flex-grow: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+  .tie-tag {
+    margin-left: 8px;
+    font-size: .75rem;
+    font-weight: 400;
+    color: var(--gold);
+  }
+  .dice-pair img {
+    width: 28px;
+    height: 28px;
+    margin-left: 2px;
+  }
+  .total {
+    width: 2em;
+    text-align: right;
+    font-size: 1.2rem;
+    font-weight: 500;
+  }
+}
+
+.pending {
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  li {
+    padding: 4px 12px;
+    border-radius: 999px;
+    background: rgba(0, 0, 0, .06);
+    color: var(--muted);
+    &.me {
+      background: var(--red-soft);
+      color: var(--red);
+    }
+  }
+}
+
+.admin {
+  border: 2px dashed var(--muted);
+  .hint {
+    text-align: center;
+    margin: 12px 0 0;
+  }
+}
+
+/* Konfetti */
+.confetti {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 10;
+  overflow: hidden;
+  i {
+    position: absolute;
+    top: -12px;
+    width: 8px;
+    height: 14px;
+    border-radius: 2px;
+    animation-name: confetti-fall;
+    animation-timing-function: cubic-bezier(.25, .6, .5, 1);
+    animation-fill-mode: forwards;
+    opacity: 0;
+  }
+}
+
+@keyframes confetti-fall {
+  0% { transform: translateY(0) rotate(0); opacity: 1; }
+  85% { opacity: 1; }
+  100% { transform: translateY(105vh) rotate(var(--r)); opacity: 0; }
+}
+
+@media (max-width: 480px) {
+  .group {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .ranking .dice-pair img {
+    width: 22px;
+    height: 22px;
+  }
+}

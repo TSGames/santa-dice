@@ -31,10 +31,10 @@ To get more help on the Angular CLI use `ng help` or go check out the [Angular C
 Images are built by GitHub Actions and pushed to `ghcr.io/torsten-simon/santa-dice` (tags: `latest`, branch, `sha-…`, semver on `v*` tags).
 
 ```sh
-docker run -d -p 8080:80 -v santa-dice-data:/data ghcr.io/torsten-simon/santa-dice:latest
+docker run -d -p 8080:80 -v santa-dice-data:/data -e ADMIN_TOKEN=<secret> ghcr.io/torsten-simon/santa-dice:latest
 ```
 
-Data is stored in `/data/data.json` (configurable via `DATA_DIR`).
+Data and uploaded images are stored in `/data` (configurable via `DATA_DIR`). The admin area is at `/#/admin` and requires `ADMIN_TOKEN`; without it, admin actions are disabled.
 
 ## Local development
 
@@ -43,4 +43,6 @@ npm run backend   # PHP backend on :8081 (src/api.php is mounted live)
 npm start         # ng serve on :4200, proxies /api.php to the backend
 ```
 
-`npm run backend:reset` stops the backend and deletes its data volume, `npm run backend:seed` loads test data from `dev/seed.json` into the running backend.
+`npm run backend:reset` stops the backend and deletes its data volume, `npm run backend:seed` loads test data (`dev/seed.json` + `dev/uploads/`) into the running backend.
+
+The dev backend pins "today" to `2026-12-08` (override with `FAKE_TODAY=2026-12-15 npm run backend`) and uses the admin token `dev`.

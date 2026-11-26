@@ -1,0 +1,248 @@
+import { Component, OnDestroy } from '@angular/core';
+import { ActivatedRoute } from '@angular/router';
+import { combineLatest, Subscription } from 'rxjs';
+import { ApiService, Calendar, Day, Item, Round } from '../api.service';
+import { LAND_MS } from '../die.component';
+
+export interface RankedRoll {
+  name: string;
+  roll: number[];
+  total: number;
+  rank: number;
+  tie: boolean;
+}
+
+interface RoundView {
+  index: number;
+  players: string[];
+  ranking: RankedRoll[];
+  waiting: string[];
+  closed: boolean;
+}
+
+const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+@Component({
+  selector: 'app-door',
+  templateUrl: './door.component.html',
+  styleUrls: ['./door.component.scss'],
+})
+export class DoorComponent implements OnDestroy {
+  calendar: Calendar | null = null;
+  day: Day | null = null;
+  rounds: RoundView[] = [];
+  current: RoundView | null = null;
+
+  nameInput = '';
+  error: string | null = null;
+  busy = false;
+
+  /** Würfeln läuft: Würfel wirbeln, bis myRoll gesetzt ist, dann landen sie. */
+  isDicing = false;
+  myRoll: number[] | null = null;
+  shownSum: number | null = null;
+
+  available: Item[] | null = null;
+  selectedItem: Item | null = null;
+
+  confetti: { x: number, delay: number, duration: number, color: string, rotate: number }[] = [];
+  private celebratedWinner: string | null = null;
+  private sub: Subscription;
+
+  constructor(public api: ApiService, route: ActivatedRoute) {
+    this.nameInput = api.name;
+    this.sub = combineLatest([route.paramMap, api.calendar$]).subscribe(([params, calendar]) => {
+      const dayNumber = Number(params.get('day'));
+      this.calendar = calendar;
+      this.update(calendar?.days.find((d) => d.day === dayNumber) || null);
+    });
+  }
+
+  ngOnDestroy() {
+    this.sub.unsubscribe();
+  }
+
+  get me() {
+    return this.api.name;
+  }
+
+  get decided() {
+    return !!this.day?.winner;
+  }
+
+  get joined() {
+    return !!this.me && !!this.day?.participants?.includes(this.me);
+  }
+
+  get canJoin() {
+    const d = this.day;
+    return !!d?.open && !d.winner && d.rounds?.length === 1 && !d.rounds[0].closed && !this.joined;
+  }
+
+  get canRoll() {
+    const r = this.current;
+    return !this.decided && !!r && !r.closed && r.players.includes(this.me) && !this.myCurrentRoll;
+  }
+
+  get myCurrentRoll(): RankedRoll | undefined {
+    return this.current?.ranking.find((r) => r.name === this.me);
+  }
+
+  get isTiebreak() {
+    return (this.day?.rounds?.length || 0) > 1;
+  }
+
+  get isWinner() {
+    return !!this.me && this.day?.winner === this.me;
+  }
+
+  // --- Aktionen ------------------------------------------------------------
+
+  async join() {
+    const name = this.nameInput.trim();
+    if (!name || !this.day) {
+      return;
+    }
+    await this.run(async () => {
+      this.api.name = name;
+      await this.api.join(this.day!.day, name);
+    });
+  }
+
+  switchName() {
+    this.api.name = '';
+    this.nameInput = '';
+    this.update(this.day);
+  }
+
+  async roll() {
+    if (this.isDicing || !this.day) {
+      return;
+    }
+    this.error = null;
+    this.isDicing = true;
+    this.myRoll = null;
+    this.shownSum = null;
+    const started = Date.now();
+    try {
+      const {roll} = await this.api.roll(this.day.day, this.me);
+      await sleep(Math.max(0, 1600 - (Date.now() - started)));
+      this.myRoll = roll;
+      await sleep(LAND_MS + 250);
+      this.isDicing = false;
+      this.myRoll = null;
+      await this.api.refresh();
+      this.update(this.day);
+      this.countUp(roll[0] + roll[1]);
+    } catch (e) {
+      this.isDicing = false;
+      this.myRoll = null;
+      this.error = (e as Error).message;
+    }
+  }
+
+  async loadAvailable() {
+    this.available = await this.api.available();
+  }
+
+  async pick() {
+    if (!this.selectedItem || !this.day) {
+      return;
+    }
+    await this.run(() => this.api.pick(this.day!.day, this.me, this.selectedItem!.id));
+  }
+
+  async admin(action: 'close' | 'winner' | 'tiebreak' | 'day-reset') {
+    if (action === 'day-reset' && !confirm('Alle Teilnahmen und Würfe dieses Türchens löschen?')) {
+      return;
+    }
+    await this.run(() => this.api.adminAction(action, this.day!.day));
+  }
+
+  trackByName(_: number, r: { name: string } | string) {
+    return typeof r === 'string' ? r : r.name;
+  }
+
+  trackByIndex(i: number) {
+    return i;
+  }
+
+  trackById(_: number, i: Item) {
+    return i.id;
+  }
+
+  // --- intern --------------------------------------------------------------
+
+  private async run(fn: () => Promise<unknown>) {
+    this.error = null;
+    this.busy = true;
+    try {
+      await fn();
+    } catch (e) {
+      this.error = (e as Error).message;
+    } finally {
+      this.busy = false;
+    }
+  }
+
+  private update(day: Day | null) {
+    this.day = day;
+    this.rounds = (day?.rounds || []).map((r, i) => this.roundView(r, i));
+    this.current = this.rounds[this.rounds.length - 1] || null;
+    if (day?.winner && this.isWinner && day.pickTarget && !this.available) {
+      this.loadAvailable();
+    }
+    if (day?.winner && this.celebratedWinner !== day.winner) {
+      // nur feiern, wenn der Gewinn live passiert, nicht beim Öffnen eines alten Türchens
+      if (this.celebratedWinner === '' && day.winner === this.me) {
+        this.celebrate();
+      }
+      this.celebratedWinner = day.winner;
+    } else if (day && !day.winner) {
+      this.celebratedWinner = '';
+    }
+  }
+
+  private roundView(round: Round, index: number): RoundView {
+    const hideMine = this.isDicing;
+    const rolls = Object.entries(round.rolls)
+      .filter(([name]) => !(hideMine && name === this.me))
+      .map(([name, roll]) => ({name, roll, total: roll[0] + roll[1], rank: 0, tie: false}))
+      .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+    rolls.forEach((r, i) => r.rank = i > 0 && rolls[i - 1].total === r.total ? rolls[i - 1].rank : i + 1);
+    rolls.forEach((r) => r.tie = rolls.filter((o) => o.total === r.total).length > 1);
+    const rolled = new Set(rolls.map((r) => r.name));
+    return {
+      index,
+      players: round.players,
+      ranking: rolls,
+      waiting: round.players.filter((p) => !rolled.has(p)),
+      closed: round.closed,
+    };
+  }
+
+  private countUp(total: number) {
+    const start = performance.now();
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / 600);
+      this.shownSum = Math.round(total * (1 - Math.pow(1 - p, 3)));
+      p < 1 ? requestAnimationFrame(tick) : setTimeout(() => this.shownSum = null, 50);
+    };
+    requestAnimationFrame(tick);
+  }
+
+  private celebrate() {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+    const colors = ['#b3261e', '#c99a06', '#1f7a4d', '#ffffff', '#2b5fd9'];
+    this.confetti = Array.from({length: 90}, () => ({
+      x: Math.random() * 100,
+      delay: Math.random() * 400,
+      duration: 1800 + Math.random() * 1400,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotate: Math.random() * 720 - 360,
+    }));
+    setTimeout(() => this.confetti = [], 3600);
+  }
+}
