@@ -30,6 +30,8 @@ Das Dev-Backend setzt „heute“ fest auf `2026-12-08` (`FAKE_TODAY`, überschr
 
 `dev/seed.json` deckt alle Türchen-Zustände ab (entschieden und freigegeben, nach Stechen entschieden, Gewinner*in fest aber Preis noch nicht freigegeben (Türchen 3), Gleichstand, eindeutig wartend, laufend, heute, gesperrt). Bei Änderungen am Datenmodell mitpflegen.
 
+E2E-Tests (Playwright, `e2e/`): `npm run e2e` baut für Production und testet gegen `php -S` mit eigenem Datenverzeichnis `e2e/.data` (bei jedem Start geleert, „heute“ = `2026-12-08`). Abgedeckt: kompletter Ablauf mit 10 Teilnehmenden in parallelen Browsern, parallele API-Zugriffe (Lock, doppelte Würfe, doppelte Auswahl), Stechen, Admin-Override, Admin-Token, Upload-Limit. In der CI laufen sie vor dem Docker-Build.
+
 `ng build` baut standardmäßig für Production. Nur dieser Build kopiert `api.php` nach `dist/`.
 
 ## Zielarchitektur Adventskalender

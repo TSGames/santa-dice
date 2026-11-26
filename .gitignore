@@ -45,3 +45,8 @@ testem.log
 # System Files
 .DS_Store
 Thumbs.db
+
+# e2e test output
+/e2e/.data
+/test-results
+/playwright-report
