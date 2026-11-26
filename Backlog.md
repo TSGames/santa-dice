@@ -12,16 +12,16 @@ Das bestehende Würfeltool wird zu einem Adventskalender umgebaut. Hinter jedem 
 |---|---|
 | Teilnehmende | sich bei geöffneten, noch nicht ausgewürfelten Türchen eintragen, würfeln, Ergebnisse und geöffnete Türchen ansehen |
 | Gewinner\*in eines Türchens | zusätzlich den Preis für das nächste Türchen aus der Preisliste auswählen |
-| Admin | Runden abschließen, Gewinner\*in markieren, Stechen starten, Preisliste pflegen, im Notfall den nächsten Preis selbst zuordnen |
+| Admin | Runden abschließen, Gewinner\*in markieren, Stechen starten, Preis freigeben, Preisliste pflegen, im Notfall den nächsten Preis selbst zuordnen |
 
 ## Kalender
 
 - 24 Türchen (1.–24. Dezember).
 - Türchen mit einem Datum bis einschließlich heute lassen sich öffnen. Künftige Türchen sind gesperrt.
 - Solange ein geöffnetes Türchen noch nicht ausgewürfelt ist, kann dort weiter eingetragen und gewürfelt werden, auch nach seinem Kalendertag.
-- Die Anordnung der Türchen wird jeden Tag neu gemischt. Am selben Tag sehen alle dieselbe Anordnung.
-- Design der Türchen: nach Design-Vorlage (folgt). Bis dahin ein schlichter Platzhalter im bestehenden Winter-Stil.
-- Ein ausgewürfeltes Türchen zeigt das Ergebnis: Gewinner\*in, Würfe und Preis.
+- Die Anordnung der Türchen ist bei jedem Aufruf zufällig. Farbe und Motiv gehören fest zur Türchen-Nummer.
+- Design: nach der Design-Vorlage `docs/design-adventskalender.png` (Farben, Motive je Türchen, Titel, Untertitel, Fußzeile).
+- Ein ausgewürfeltes Türchen zeigt das Ergebnis: Gewinner\*in und Würfe, nach der Freigabe auch den Preis.
 
 ## Ablauf pro Türchen
 
@@ -31,8 +31,8 @@ Das bestehende Würfeltool wird zu einem Adventskalender umgebaut. Hinter jedem 
    - Höchste Summe eindeutig → Admin markiert die Person als Gewinner\*in.
    - Mehrere Personen mit der höchsten Summe → Admin startet ein **Stechen**.
 4. **Stechen:** Nur die Personen mit der höchsten Summe der vorherigen Runde würfeln erneut. Bei erneutem Gleichstand startet der Admin ein weiteres Stechen, bis jemand allein vorne liegt. Alle Runden bleiben sichtbar.
-5. **Preis anzeigen:** Nach Abschluss hebt das Türchen den Preis groß hervor, mit Bild, Beschreibung und Link.
-6. **Nächstes Türchen befüllen:** Gewinner\*in wählt aus den verfügbaren Einträgen der Preisliste den Preis für das nächste Türchen.
+5. **Preis freigeben:** Bis dahin bleibt der Preis verborgen (verpacktes Geschenk). Erst wenn der Admin ihn nach Würfeln und Festlegen der Gewinner\*in freigibt, wird er animiert enthüllt und groß angezeigt, mit Bild, Beschreibung und Link.
+6. **Nächstes Türchen befüllen:** Nach der Freigabe wählt die Gewinner\*in aus den verfügbaren Einträgen der Preisliste den Preis für das nächste Türchen.
 
 ## Preisliste (Befüll-Backend)
 

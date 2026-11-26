@@ -1,0 +1,81 @@
+:host {
+  display: block;
+  height: 100%;
+}
+
+.tile {
+  --fg: var(--cream);
+  position: relative;
+  height: 100%;
+  border-radius: 10px;
+  overflow: hidden;
+  container-type: inline-size;
+
+  &.sage { background: var(--sage); }
+  &.mustard { background: var(--mustard); --fg: var(--forest); }
+  &.cream { background: var(--cream-tile); --fg: var(--forest); box-shadow: inset 0 0 0 1.5px var(--cream-border); }
+  &.petrol { background: var(--petrol); }
+  &.forest { background: var(--forest); }
+}
+
+.num {
+  position: absolute;
+  left: 9%;
+  top: 6%;
+  font-family: var(--font-display);
+  font-weight: 900;
+  font-size: 34cqw;
+  line-height: 1;
+  color: var(--fg);
+  letter-spacing: -.02em;
+}
+
+.label {
+  position: absolute;
+  left: 9%;
+  bottom: 9%;
+  font-size: 7cqw;
+  font-weight: 700;
+  letter-spacing: .04em;
+  text-transform: uppercase;
+  color: var(--forest);
+}
+
+.motif {
+  position: absolute;
+  right: 8%;
+  bottom: 8%;
+  width: 40%;
+  height: auto;
+  overflow: visible;
+}
+
+/* Farben der Motive */
+.gold { fill: var(--gold-icon); }
+.light { fill: #fffaf0; }
+.tree { fill: var(--forest); }
+.trunk { fill: #9a6a2f; }
+.box { fill: var(--gift); }
+.box-light { fill: var(--gift); }
+.ribbon { fill: var(--forest); }
+.ribbon-line { stroke: var(--forest); stroke-width: 3; stroke-linecap: round; }
+.gold-line { stroke: var(--gold-icon); stroke-width: 3; stroke-linecap: round; }
+.dots { fill: #c79a4c; }
+.branch path { stroke: var(--gold-icon); stroke-width: 2.4; stroke-linecap: round; fill: none; }
+.string { stroke: rgba(0, 0, 0, .35); stroke-width: 1.2; }
+.sage-ball { fill: var(--sage); }
+.stocking { fill: var(--gold-icon); }
+.cuff { fill: #fffaf0; }
+.flake path, path.flake { stroke: var(--forest); stroke-width: 2; stroke-linecap: round; fill: none; }
+.stem { stroke: #fffaf0; stroke-width: 2.2; stroke-linecap: round; }
+.berry { fill: #f3e3b5; }
+.white-ball { fill: #fffaf0; }
+.shine { stroke: var(--gold-icon); stroke-width: 2.2; stroke-linecap: round; }
+
+.sage .flake path, .petrol .flake path, .forest .flake path { stroke: var(--cream); }
+.forest .tree, .petrol .tree { fill: #0c2a24; }
+.sage .tree { fill: var(--forest); }
+.mustard .stocking { fill: #b9832a; }
+.mustard .cuff { fill: #fffaf0; }
+.sage .sage-ball { fill: #2f6150; }
+.sage .light, .mustard .light, .forest .light { fill: #fffaf0; }

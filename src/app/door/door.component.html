@@ -17,21 +17,41 @@
     <div class=error *ngIf="error">{{error}}</div>
 
     <!-- Preis -->
-    <section class="card prize" [class.won]="decided">
-      <ng-container *ngIf="decided">
-        <div class=won-by>🏆 Gewonnen von <strong>{{d.winner}}</strong></div>
+    <section class="card prize" [class.won]="d.revealed" [class.revealing]="revealing">
+      <div class=won-by *ngIf="decided">🏆 Gewonnen von <strong>{{d.winner}}</strong></div>
+
+      <!-- verpackt, bis der Admin freigibt -->
+      <div class=wrapped *ngIf="!d.revealed || revealing" [class.waiting]="decided && !d.revealed" aria-hidden="true">
+        <svg viewBox="0 0 120 120" class=gift>
+          <g class=gift-body>
+            <rect x="18" y="52" width="84" height="58" rx="6" class=box />
+            <rect x="54" y="52" width="12" height="58" class=ribbon />
+          </g>
+          <g class=gift-lid>
+            <path d="M60 36 C46 14 28 20 36 32 M60 36 C74 14 92 20 84 32" class=bow />
+            <rect x="12" y="34" width="96" height="22" rx="5" class=box />
+            <rect x="54" y="34" width="12" height="22" class=ribbon />
+          </g>
+        </svg>
+      </div>
+      <ng-container *ngIf="!d.revealed">
+        <h2>{{decided ? 'Gleich wird enthüllt …' : (d.hasItem ? 'Was ist wohl drin?' : 'Überraschung')}}</h2>
+        <p class=hint>{{decided ? 'Der Preis wird gleich freigegeben.' : 'Der Preis wird nach dem Würfeln enthüllt.'}}</p>
       </ng-container>
-      <ng-container *ngIf="d.item; else noItem">
-        <div class=prize-label *ngIf="!decided">Darum wird gewürfelt</div>
-        <img *ngIf="d.item.image" [src]="d.item.image" [alt]="d.item.title" class=prize-image>
-        <h2>{{d.item.title}}</h2>
-        <p class=prize-text *ngIf="d.item.description">{{d.item.description}}</p>
-        <a *ngIf="d.item.link" mat-raised-button color="primary" [href]="d.item.link" target="_blank" rel="noopener">Ansehen</a>
-      </ng-container>
-      <ng-template #noItem>
-        <h2>Überraschung</h2>
-        <p class=hint>Der Preis für dieses Türchen steht noch nicht fest.</p>
-      </ng-template>
+
+      <!-- enthüllt -->
+      <div class=prize-content *ngIf="d.revealed">
+        <div class=rays *ngIf="revealing" aria-hidden="true"></div>
+        <ng-container *ngIf="d.item; else noItem">
+          <img *ngIf="d.item.image" [src]="d.item.image" [alt]="d.item.title" class=prize-image>
+          <h2>{{d.item.title}}</h2>
+          <p class=prize-text *ngIf="d.item.description">{{d.item.description}}</p>
+          <a *ngIf="d.item.link" mat-raised-button color="primary" [href]="d.item.link" target="_blank" rel="noopener">Ansehen</a>
+        </ng-container>
+        <ng-template #noItem>
+          <h2>Kein Preis hinterlegt</h2>
+        </ng-template>
+      </div>
     </section>
 
     <!-- Eintragen -->
@@ -130,8 +150,11 @@
         </button>
         <button mat-raised-button color="accent" (click)="admin('tiebreak')"
                 [disabled]="busy || decided || !d.roundComplete || (d.leaders?.length || 0) < 2">Stechen starten</button>
+        <button mat-raised-button color="primary" (click)="admin('reveal')" [disabled]="busy || !decided || d.revealed">Preis freigeben</button>
         <button mat-button color="warn" (click)="admin('day-reset')" [disabled]="busy">Türchen zurücksetzen</button>
       </div>
+      <p class=hint *ngIf="d.preview">Nur für Admin sichtbar: hinterlegt ist „{{d.preview.title}}“.</p>
+      <p class=hint *ngIf="!d.hasItem">Für dieses Türchen ist noch kein Preis hinterlegt.</p>
       <p class=hint>Preis zuordnen: im <a routerLink="/admin">Admin-Bereich</a>.</p>
     </section>
   </ng-container>

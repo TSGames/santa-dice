@@ -1,6 +1,6 @@
 import { Component } from '@angular/core';
 import { map } from 'rxjs';
-import { ApiService, Day, seededShuffle } from '../api.service';
+import { ApiService, Day, shuffle } from '../api.service';
 
 @Component({
   selector: 'app-calendar',
@@ -8,10 +8,12 @@ import { ApiService, Day, seededShuffle } from '../api.service';
   styleUrls: ['./calendar.component.scss'],
 })
 export class CalendarComponent {
-  /** Türchen in täglich neuer, für alle gleicher Reihenfolge. */
+  /** Bei jedem Aufruf neu gemischt, bleibt stabil, solange die Seite offen ist. */
+  private readonly order = shuffle(Array.from({length: 24}, (_, i) => i + 1));
+
   readonly view$ = this.api.calendar$.pipe(map((c) => c && {
     ...c,
-    doors: seededShuffle(c.days, 'advent-' + c.today),
+    doors: this.order.map((n) => c.days.find((d) => d.day === n)!).filter(Boolean),
   }));
 
   constructor(public api: ApiService) {
@@ -19,12 +21,5 @@ export class CalendarComponent {
 
   trackByDay(_: number, d: Day) {
     return d.day;
-  }
-
-  status(d: Day): 'locked' | 'decided' | 'open' {
-    if (!d.open) {
-      return 'locked';
-    }
-    return d.winner ? 'decided' : 'open';
   }
 }

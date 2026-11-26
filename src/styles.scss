@@ -1,12 +1,57 @@
+@use '@angular/material' as mat;
+
+/* Material-Theme in den Farben der Design-Vorlage */
+$forest-palette: (
+  50: #e3ebe9, 100: #b9cdc8, 200: #8baca4, 300: #5d8b7f, 400: #3a7264, 500: #17594a,
+  600: #145143, 700: #10372f, 800: #0d2f28, 900: #08201b,
+  A100: #6ee7c4, A200: #3be0b0, A400: #00d49a, A700: #00ba87,
+  contrast: (50: rgba(0,0,0,.87), 100: rgba(0,0,0,.87), 200: rgba(0,0,0,.87), 300: white, 400: white, 500: white,
+    600: white, 700: white, 800: white, 900: white, A100: rgba(0,0,0,.87), A200: rgba(0,0,0,.87), A400: rgba(0,0,0,.87), A700: rgba(0,0,0,.87))
+);
+$mustard-palette: (
+  50: #fbf5e6, 100: #f4e5c0, 200: #ecd496, 300: #e4c26c, 400: #dfb54d, 500: #d4a64a,
+  600: #c99a3f, 700: #b98a33, 800: #a97a28, 900: #8d5f15,
+  A100: #fff1d6, A200: #ffe0a3, A400: #ffcf70, A700: #ffc656,
+  contrast: (50: rgba(0,0,0,.87), 100: rgba(0,0,0,.87), 200: rgba(0,0,0,.87), 300: rgba(0,0,0,.87), 400: rgba(0,0,0,.87),
+    500: #10372f, 600: #10372f, 700: #10372f, 800: white, 900: white, A100: rgba(0,0,0,.87), A200: rgba(0,0,0,.87), A400: rgba(0,0,0,.87), A700: rgba(0,0,0,.87))
+);
+
+$theme: mat.define-light-theme((
+  color: (
+    primary: mat.define-palette($forest-palette, 700),
+    accent: mat.define-palette($mustard-palette, 500),
+    warn: mat.define-palette(mat.$red-palette, 800),
+  ),
+  typography: mat.define-typography-config($font-family: 'Source Sans 3, Roboto, sans-serif'),
+  density: 0,
+));
+
+@include mat.core();
+@include mat.all-component-themes($theme);
+
 :root {
-  --red: #b3261e;
-  --red-soft: rgba(179, 38, 30, .12);
-  --gold: #c99a06;
-  --gold-soft: #fff4d6;
-  --green: #1f7a4d;
-  --ink: #1f2a37;
-  --muted: #5b6675;
-  --card: rgba(255, 255, 255, .9);
+  /* Farben der Design-Vorlage (docs/design-adventskalender.png) */
+  --paper: #f4efe4;
+  --cream: #fbf7ee;
+  --cream-tile: #f7f2e8;
+  --cream-border: #e3d9c4;
+  --sage: #4f8069;
+  --mustard: #d4a64a;
+  --petrol: #0d5266;
+  --forest: #10372f;
+  --gold-icon: #e0b04a;
+  --gift: #e9c98c;
+
+  /* semantische Farben */
+  --primary: var(--petrol);
+  --primary-soft: rgba(13, 82, 102, .12);
+  --accent: var(--mustard);
+  --accent-soft: #f8ecd0;
+  --ink: var(--forest);
+  --muted: #5d6b66;
+  --card: #fffdf8;
+
+  --font-display: 'Merriweather', Georgia, serif;
 }
 
 html,
@@ -16,35 +61,40 @@ body {
 }
 
 body {
-  font-family: Roboto, "Helvetica Neue", sans-serif;
+  font-family: 'Source Sans 3', Roboto, "Helvetica Neue", sans-serif;
+  font-size: 16px;
   overflow-x: hidden;
   color: var(--ink);
-  background: #eef4f8;
+  background: var(--paper);
 }
 
 h1 {
   margin: 0;
-  padding: 1em 0 .4em;
+  padding: 1em 0 .5em;
+  font-family: var(--font-display);
   font-size: 2rem;
-  font-weight: 500;
+  font-weight: 900;
   text-align: center;
+  color: var(--forest);
 }
 
 a {
-  color: var(--red);
+  color: var(--petrol);
 }
 
 .card {
   background: var(--card);
   border-radius: 16px;
   padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, .12);
+  border: 1px solid var(--cream-border);
+  box-shadow: 0 2px 10px rgba(16, 55, 47, .08);
   margin-bottom: 16px;
 
   h2 {
     margin: 0 0 8px;
-    font-size: 1.25rem;
-    font-weight: 500;
+    font-family: var(--font-display);
+    font-size: 1.2rem;
+    font-weight: 700;
   }
 
   h3 {
@@ -61,7 +111,7 @@ a {
 
 .error {
   background: #fde8e7;
-  color: var(--red);
+  color: #a3261e;
   border-radius: 8px;
   padding: 8px 12px;
   margin-bottom: 12px;

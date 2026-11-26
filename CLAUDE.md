@@ -28,7 +28,7 @@ npm run backend:reset  # Backend stoppen und Daten-Volume löschen
 
 Das Dev-Backend setzt „heute“ fest auf `2026-12-08` (`FAKE_TODAY`, überschreibbar: `FAKE_TODAY=2026-12-15 npm run backend`) und nutzt das Admin-Token `dev` (Admin-Bereich: `/#/admin`).
 
-`dev/seed.json` deckt alle Türchen-Zustände ab (entschieden, nach Stechen entschieden, Auswahl ausstehend, Gleichstand, eindeutig wartend, laufend, heute, gesperrt). Bei Änderungen am Datenmodell mitpflegen.
+`dev/seed.json` deckt alle Türchen-Zustände ab (entschieden und freigegeben, nach Stechen entschieden, Gewinner*in fest aber Preis noch nicht freigegeben (Türchen 3), Gleichstand, eindeutig wartend, laufend, heute, gesperrt). Bei Änderungen am Datenmodell mitpflegen.
 
 `ng build` baut standardmäßig für Production. Nur dieser Build kopiert `api.php` nach `dist/`.
 
@@ -50,6 +50,7 @@ data.json
       "rounds": [ { "players": ["…"], "rolls": { "<name>": [3, 6] } } ],
       "closed": false,
       "winner": "…" | null,
+      "revealed": false,
       "nextPickedBy": "…" | null
     }
   }
@@ -67,7 +68,7 @@ Beim Umbau den alten Datenstand (flache Liste `[{name, number}]`) nicht migriere
 | `join` | alle | bei einem geöffneten, noch nicht ausgewürfelten Türchen eintragen |
 | `roll` | eingetragene | in der aktuellen Runde würfeln (Server würfelt) |
 | `pick` | Gewinner\*in | Eintrag fürs nächste Türchen zuordnen |
-| `close`, `winner`, `tiebreak` | Admin | Runde schließen, Gewinner\*in setzen, Stechen starten |
+| `close`, `winner`, `tiebreak`, `reveal`, `day-reset` | Admin | Runde schließen, Gewinner\*in setzen, Stechen starten, Preis freigeben, Türchen zurücksetzen |
 | `items`, `item-save`, `item-delete`, `upload`, `assign` | Admin | Preisliste pflegen, Bild hochladen, Preis manuell zuordnen |
 
 Schreibende Aktionen per POST.
@@ -78,14 +79,16 @@ Schreibende Aktionen per POST.
 - Pro Runde ein Wurf pro Person. Würfeln nur für Spieler\*innen der aktuellen Runde.
 - `winner` nur bei eindeutiger Höchstsumme, `tiebreak` nur bei Gleichstand. Die neue Runde enthält nur die Gleichstehenden.
 - Ein Eintrag kann nur einem Türchen zugeordnet werden. `pick` nur durch die Gewinner\*in eines Türchens, einmal pro Gewinn, für das nächste Türchen ohne Preis.
-- Künftige Türchen liefern keinen Preis aus.
+- Künftige Türchen liefern keinen Preis aus. Offene Türchen liefern den Preis erst nach `reveal` aus (Admin bekommt vorher `preview`).
+- `reveal` nur mit Gewinner\*in, `pick` erst nach `reveal`.
 - Alle Einträge sind gleichartig (Bild, Beschreibung, Link). Keine Typunterscheidung zwischen Sachpreis und Video o. Ä.
 - Admin-Aktionen erfordern ein Token aus der Umgebungsvariable `ADMIN_TOKEN` (Header). Der bisherige Mechanismus „Name = Admin“ entfällt.
 - Uploads: nur Bildtypen (jpeg, png, webp, gif), Größenlimit, Dateiname serverseitig aus der ID, nie aus dem Upload.
 
 ### Frontend
 
-- Kalenderansicht mit 24 Türchen. Die Tagesmischung erfolgt deterministisch mit dem Datum als Seed, damit alle dieselbe Anordnung sehen.
-- Türchen-Detail: Eintragen, Würfeln (bestehender Flow mit `DieComponent`), Rundenübersicht inkl. Stechen, Preis-Hervorhebung.
+- Kalenderansicht mit 24 Türchen nach `docs/design-adventskalender.png`. `DoorTileComponent` hält Farbe und Motiv je Türchen. Reihenfolge bei jedem Aufruf zufällig, stabil während die Seite offen ist.
+- Farben und Schriften als CSS-Variablen in `src/styles.scss` (inkl. Material-Theme), keine Farbwerte direkt in Komponenten.
+- Türchen-Detail: Eintragen, Würfeln (bestehender Flow mit `DieComponent`), Rundenübersicht inkl. Stechen, verpacktes Geschenk bis zur Freigabe, Enthüllungs-Animation nur bei live beobachteter Freigabe.
 - Admin-Bereich als eigene Route `/admin` (Token-Eingabe, Speicherung im `localStorage`).
 - Listen immer mit `trackBy` rendern und abgeleitete Daten nur bei neuen Server-Daten berechnen (nicht in Gettern, die neue Objekte erzeugen), sonst baut `*ngFor` DOM und Würfel ständig neu auf.

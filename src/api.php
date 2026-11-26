@@ -100,7 +100,7 @@ function nameParam(): string
 function emptyDay(): array
 {
     return ['participants' => [], 'rounds' => [['players' => [], 'rolls' => (object)[], 'closed' => false]],
-        'winner' => null, 'itemId' => null, 'pickedFor' => null];
+        'winner' => null, 'revealed' => false, 'itemId' => null, 'pickedFor' => null];
 }
 
 function normalize(array $data): array
@@ -185,13 +185,18 @@ function calendar(array $data): array
         $entry = ['day' => $d, 'open' => $isOpen];
         if ($isOpen) {
             $round = $day['rounds'][count($day['rounds']) - 1];
+            $item = publicItem(findItem($data, $day['itemId']));
             $entry += [
-                'item' => publicItem(findItem($data, $day['itemId'])),
+                // Preis erst nach Freigabe durch den Admin sichtbar
+                'item' => $day['revealed'] ? $item : null,
+                'hasItem' => (bool)$item,
+                'preview' => isAdmin() && !$day['revealed'] ? $item : null,
+                'revealed' => $day['revealed'],
                 'participants' => $day['participants'],
                 'rounds' => $day['rounds'],
                 'winner' => $day['winner'],
                 'pickedFor' => $day['pickedFor'],
-                'pickTarget' => $day['winner'] && !$day['pickedFor'] ? nextDayWithoutItem($data, $d) : null,
+                'pickTarget' => $day['revealed'] && !$day['pickedFor'] ? nextDayWithoutItem($data, $d) : null,
                 'roundComplete' => roundResult($round) !== null,
                 'leaders' => leaders($round),
             ];
@@ -286,6 +291,7 @@ switch ($action) {
         $itemId = (string)param('itemId');
         $day = &$data['days'][(string)$d];
         if ($day['winner'] !== $name) fail(403, 'only the winner can pick');
+        if (!$day['revealed']) fail(409, 'prize not revealed yet');
         if ($day['pickedFor']) fail(409, 'already picked');
         $target = nextDayWithoutItem($data, $d);
         if (!$target) fail(409, 'no door left to fill');
@@ -350,6 +356,14 @@ switch ($action) {
         unset($round);
         $day['rounds'][] = ['players' => $leaders, 'rolls' => (object)[], 'closed' => false];
         unset($day);
+        $save();
+        break;
+
+    case 'reveal':
+        requireAdmin();
+        $d = dayParam();
+        if (!$data['days'][(string)$d]['winner']) fail(409, 'no winner yet');
+        $data['days'][(string)$d]['revealed'] = true;
         $save();
         break;
 

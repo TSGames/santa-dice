@@ -12,6 +12,7 @@ import { AppComponent } from './app.component';
 import { DieComponent } from './die.component';
 import { SnowComponent } from './snow.component';
 import { CalendarComponent } from './calendar/calendar.component';
+import { DoorTileComponent } from './calendar/door-tile.component';
 import { DoorComponent } from './door/door.component';
 import { AdminComponent } from './admin/admin.component';
 
@@ -28,6 +29,7 @@ const routes: Routes = [
     DieComponent,
     SnowComponent,
     CalendarComponent,
+    DoorTileComponent,
     DoorComponent,
     AdminComponent,
   ],

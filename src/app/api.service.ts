@@ -20,7 +20,12 @@ export interface Round {
 export interface Day {
   day: number;
   open: boolean;
+  /** Preis, erst nach Freigabe durch den Admin gesetzt. */
   item?: Item | null;
+  hasItem?: boolean;
+  /** Nur für Admin vor der Freigabe. */
+  preview?: Item | null;
+  revealed?: boolean;
   participants?: string[];
   rounds?: Round[];
   winner?: string | null;
@@ -55,6 +60,8 @@ const ERRORS: { [key: string]: string } = {
   'no tie at the top': 'Kein Gleichstand an der Spitze.',
   'admin token required': 'Admin-Token fehlt oder ist falsch.',
   'item is assigned to a door': 'Der Preis hängt schon an einem Türchen.',
+  'prize not revealed yet': 'Der Preis wurde noch nicht freigegeben.',
+  'no winner yet': 'Es gibt noch keine Gewinner*in.',
 };
 
 @Injectable({providedIn: 'root'})
@@ -126,7 +133,7 @@ export class ApiService {
 
   // --- Admin ---------------------------------------------------------------
 
-  adminAction(action: 'close' | 'winner' | 'tiebreak' | 'day-reset', day: number) {
+  adminAction(action: 'close' | 'winner' | 'tiebreak' | 'reveal' | 'day-reset', day: number) {
     return this.post<Calendar>(action, {day}).then((c) => this.calendar$.next(c));
   }
 
@@ -187,23 +194,11 @@ export class ApiService {
   }
 }
 
-/** Deterministischer Zufall (mulberry32) mit String-Seed. */
-export function seededShuffle<T>(list: T[], seed: string): T[] {
-  let h = 1779033703 ^ seed.length;
-  for (let i = 0; i < seed.length; i++) {
-    h = Math.imul(h ^ seed.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
-  }
-  let a = h >>> 0;
-  const random = () => {
-    a = (a + 0x6D2B79F5) | 0;
-    let t = Math.imul(a ^ (a >>> 15), 1 | a);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
+/** Zufällige Reihenfolge (Fisher-Yates). */
+export function shuffle<T>(list: T[]): T[] {
   const result = [...list];
   for (let i = result.length - 1; i > 0; i--) {
-    const j = Math.floor(random() * (i + 1));
+    const j = Math.floor(Math.random() * (i + 1));
     [result[i], result[j]] = [result[j], result[i]];
   }
   return result;

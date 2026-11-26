@@ -65,9 +65,9 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
     const w = window.innerWidth;
     const h = window.innerHeight;
     ctx.clearRect(0, 0, w, h);
-    ctx.fillStyle = 'rgba(255, 255, 255, .9)';
-    ctx.shadowColor = 'rgba(255, 255, 255, .8)';
-    ctx.shadowBlur = 4;
+    ctx.fillStyle = 'rgba(255, 255, 255, .95)';
+    ctx.shadowColor = 'rgba(79, 128, 105, .45)';
+    ctx.shadowBlur = 3;
     ctx.beginPath();
     for (let i = 0; i < this.flakes.length; i++) {
       const f = this.flakes[i];

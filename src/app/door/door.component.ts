@@ -46,7 +46,9 @@ export class DoorComponent implements OnDestroy {
   selectedItem: Item | null = null;
 
   confetti: { x: number, delay: number, duration: number, color: string, rotate: number }[] = [];
-  private celebratedWinner: string | null = null;
+  /** Enthüllungs-Animation läuft (nur wenn die Freigabe live beobachtet wird). */
+  revealing = false;
+  private seen: { day: number, revealed: boolean } | null = null;
   private sub: Subscription;
 
   constructor(public api: ApiService, route: ActivatedRoute) {
@@ -152,7 +154,7 @@ export class DoorComponent implements OnDestroy {
     await this.run(() => this.api.pick(this.day!.day, this.me, this.selectedItem!.id));
   }
 
-  async admin(action: 'close' | 'winner' | 'tiebreak' | 'day-reset') {
+  async admin(action: 'close' | 'winner' | 'tiebreak' | 'reveal' | 'day-reset') {
     if (action === 'day-reset' && !confirm('Alle Teilnahmen und Würfe dieses Türchens löschen?')) {
       return;
     }
@@ -192,15 +194,11 @@ export class DoorComponent implements OnDestroy {
     if (day?.winner && this.isWinner && day.pickTarget && !this.available) {
       this.loadAvailable();
     }
-    if (day?.winner && this.celebratedWinner !== day.winner) {
-      // nur feiern, wenn der Gewinn live passiert, nicht beim Öffnen eines alten Türchens
-      if (this.celebratedWinner === '' && day.winner === this.me) {
-        this.celebrate();
-      }
-      this.celebratedWinner = day.winner;
-    } else if (day && !day.winner) {
-      this.celebratedWinner = '';
+    // Enthüllung nur animieren, wenn die Freigabe live passiert, nicht beim Öffnen eines alten Türchens
+    if (day && this.seen?.day === day.day && !this.seen.revealed && day.revealed) {
+      this.playReveal();
     }
+    this.seen = day ? {day: day.day, revealed: !!day.revealed} : null;
   }
 
   private roundView(round: Round, index: number): RoundView {
@@ -231,11 +229,17 @@ export class DoorComponent implements OnDestroy {
     requestAnimationFrame(tick);
   }
 
+  private playReveal() {
+    this.revealing = true;
+    setTimeout(() => this.celebrate(), 1300);
+    setTimeout(() => this.revealing = false, 4200);
+  }
+
   private celebrate() {
     if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
       return;
     }
-    const colors = ['#b3261e', '#c99a06', '#1f7a4d', '#ffffff', '#2b5fd9'];
+    const colors = ['#4f8069', '#d4a64a', '#0d5266', '#10372f', '#e9c98c', '#fbf7ee'];
     this.confetti = Array.from({length: 90}, () => ({
       x: Math.random() * 100,
       delay: Math.random() * 400,

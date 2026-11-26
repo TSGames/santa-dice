@@ -1,30 +1,48 @@
-<h1>Adventskalender</h1>
+<section class=frame>
+  <header class=head>
+    <div>
+      <h1>OER-Adventskalender</h1>
+      <p class=subtitle>Kleine Überraschungen für eine große Community</p>
+    </div>
+    <svg class=deco viewBox="0 0 120 50" aria-hidden="true">
+      <g class=deco-branch><path d="M6 44 L70 8"/><path d="M16 38 l-3 -9 M16 38 l8 3 M26 32.5 l-3 -9 M26 32.5 l8 3 M36 27 l-3 -9 M36 27 l8 3 M46 21.5 l-3 -9 M46 21.5 l8 3 M56 16 l-3 -9 M56 16 l8 3"/></g>
+      <polygon class=deco-star points="104,4 106.4,9.6 112.4,10 107.8,13.9 109.2,19.8 104,16.6 98.8,19.8 100.2,13.9 95.6,10 101.6,9.6" />
+      <polygon class=deco-star points="88,30 89.2,32.8 92.2,33 89.9,35 90.6,37.9 88,36.3 85.4,37.9 86.1,35 83.8,33 86.8,32.8" />
+    </svg>
+  </header>
+  <hr>
 
-<ng-container *ngIf="view$ | async as view; else loading">
-  <p class="intro hint" *ngIf="view.openUntil === 0">Der Kalender startet am 1. Dezember.</p>
-  <p class="intro hint" *ngIf="view.openUntil > 0">Öffne ein Türchen, trag dich ein und würfle um den Preis.</p>
+  <ng-container *ngIf="view$ | async as view; else loading">
+    <p class=hint *ngIf="view.openUntil === 0">Der Kalender startet am 1. Dezember.</p>
 
-  <div class=doors>
-    <ng-container *ngFor="let d of view.doors; trackBy: trackByDay">
-      <a *ngIf="d.open; else lockedDoor" class="door {{status(d)}}" [routerLink]="['/tuer', d.day]"
-         [class.today]="d.day === view.openUntil" [attr.aria-label]="'Türchen ' + d.day">
-        <span class=num>{{d.day}}</span>
-        <ng-container [ngSwitch]="status(d)">
-          <span *ngSwitchCase="'decided'" class=state>🏆 {{d.winner}}</span>
-          <span *ngSwitchCase="'open'" class=state>
-            {{d.participants?.length ? d.participants!.length + ' dabei' : 'Jetzt würfeln'}}
-          </span>
-        </ng-container>
-        <img *ngIf="d.winner && d.item?.image" [src]="d.item!.image" class=thumb alt="">
-      </a>
-      <ng-template #lockedDoor>
-        <div class="door locked" [attr.aria-label]="'Türchen ' + d.day + ', noch geschlossen'">
-          <span class=num>{{d.day}}</span>
-          <span class=state>🔒</span>
-        </div>
-      </ng-template>
-    </ng-container>
-  </div>
-</ng-container>
+    <div class=doors>
+      <ng-container *ngFor="let d of view.doors; trackBy: trackByDay">
+        <a *ngIf="d.open; else lockedDoor" class=door [routerLink]="['/tuer', d.day]"
+           [class.today]="d.day === view.openUntil" [class.decided]="!!d.winner" [class.revealed]="d.revealed"
+           [attr.aria-label]="'Türchen ' + d.day">
+          <app-door-tile [day]="d.day"></app-door-tile>
+          <ng-container *ngIf="d.revealed && d.item; else badge">
+            <div class=opened>
+              <img *ngIf="d.item.image" [src]="d.item.image" alt="">
+              <span class=opened-num>{{d.day}}</span>
+              <span class=opened-winner>🏆 {{d.winner}}</span>
+            </div>
+          </ng-container>
+          <ng-template #badge>
+            <span class=badge *ngIf="d.winner">🏆 {{d.winner}}</span>
+            <span class="badge cta" *ngIf="!d.winner">{{d.participants?.length ? d.participants!.length + ' dabei' : 'Jetzt würfeln'}}</span>
+          </ng-template>
+        </a>
+        <ng-template #lockedDoor>
+          <div class="door locked" [attr.aria-label]="'Türchen ' + d.day + ', noch geschlossen'">
+            <app-door-tile [day]="d.day"></app-door-tile>
+            <span class=lock aria-hidden="true">🔒</span>
+          </div>
+        </ng-template>
+      </ng-container>
+    </div>
+  </ng-container>
+  <ng-template #loading><p class=hint>Lade Kalender …</p></ng-template>
 
-<ng-template #loading><p class="intro hint">Lade Kalender …</p></ng-template>
+  <footer class=foot>edu-sharing.net e.V. und metaVentis wünschen eine magische Weihnachtszeit</footer>
+</section>
