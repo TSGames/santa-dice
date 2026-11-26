@@ -91,6 +91,18 @@
       <p class=hint *ngIf="current!.waiting.length">Warte auf {{current!.waiting.length}} weitere …</p>
     </section>
 
+    <!-- Würfe anderer, live -->
+    <section class="card live" *ngIf="liveRolls.length" aria-live="polite">
+      <div class=live-roll *ngFor="let r of liveRolls; trackBy: trackByKey">
+        <span class=live-name>{{r.name}} {{r.shown ? 'hat gewürfelt' : 'würfelt …'}}</span>
+        <div class=live-dice>
+          <app-die [value]="r.shown?.[0] ?? null" [rolling]="r.rolling" [size]="48"></app-die>
+          <app-die [value]="r.shown?.[1] ?? null" [rolling]="r.rolling" [size]="48" [delay]="120"></app-die>
+        </div>
+        <span class=live-sum [class.visible]="r.shown">{{r.roll[0] + r.roll[1]}}</span>
+      </div>
+    </section>
+
     <!-- Auswahl fürs nächste Türchen -->
     <section class="card pick" *ngIf="isWinner && d.pickTarget">
       <h2>Du darfst auswählen!</h2>

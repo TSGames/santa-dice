@@ -16,6 +16,22 @@
 </section>
 
 <ng-container *ngIf="items">
+  <!-- Geöffnete Türchen -->
+  <section class=card *ngIf="api.calendar$ | async as c">
+    <h2>Geöffnete Türchen <span class=count>bis {{c.openUntil}}</span></h2>
+    <p class=hint>Normalerweise öffnet sich jeden Tag im Dezember ein Türchen. Hier kannst du selbst festlegen, bis zu welchem Türchen geöffnet ist, z. B. um Wochenend-Türchen erst am Montag freizugeben.</p>
+    <label class=assign-row>
+      <span class=day>bis</span>
+      <select [ngModel]="openSelection" (ngModelChange)="setOpenUntil($event)" [disabled]="busy">
+        <option value="auto">Automatisch nach Datum (heute: {{c.autoOpenUntil ?? '?'}})</option>
+        <option *ngFor="let n of openOptions" [value]="n">{{n === 0 ? 'Keins geöffnet' : 'Türchen ' + n}}</option>
+      </select>
+    </label>
+    <p class=hint *ngIf="c.openOverride !== null && c.openOverride !== undefined">
+      Manuell festgelegt. Neue Türchen öffnen sich erst wieder, wenn du auf „Automatisch“ zurückstellst.
+    </p>
+  </section>
+
   <!-- Formular -->
   <section class=card>
     <h2>{{form.id ? 'Preis bearbeiten' : 'Neuer Preis'}}</h2>

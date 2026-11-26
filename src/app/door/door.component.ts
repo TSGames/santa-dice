@@ -20,6 +20,22 @@ interface RoundView {
   closed: boolean;
 }
 
+/** Wurf einer anderen Person, der gerade live animiert wird. */
+interface LiveRoll {
+  key: string;
+  name: string;
+  roll: number[];
+  /** Startet erst nach dem ersten Rendern, damit der Würfel den Wechsel mitbekommt. */
+  rolling: boolean;
+  /** null, solange die Würfel noch wirbeln. */
+  shown: number[] | null;
+}
+
+/** So lange wirbeln die Würfel bei Würfen anderer, bevor sie landen. */
+const LIVE_TUMBLE_MS = 1100;
+/** So lange bleibt das Ergebnis nach der Landung stehen, bevor es in die Rangliste wandert. */
+const LIVE_HOLD_MS = 1600;
+
 const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
 @Component({
@@ -45,6 +61,13 @@ export class DoorComponent implements OnDestroy {
   available: Item[] | null = null;
   selectedItem: Item | null = null;
 
+  /** Würfe anderer, die gerade live gezeigt werden. */
+  liveRolls: LiveRoll[] = [];
+  /** Bereits bekannte Würfe als "tag:runde:name"; null = noch nicht initialisiert. */
+  private knownRolls: Set<string> | null = null;
+  private knownDay: number | null = null;
+  private liveTimers: any[] = [];
+
   confetti: { x: number, delay: number, duration: number, color: string, rotate: number }[] = [];
   /** Enthüllungs-Animation läuft (nur wenn die Freigabe live beobachtet wird). */
   revealing = false;
@@ -62,6 +85,7 @@ export class DoorComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.sub.unsubscribe();
+    this.liveTimers.forEach(clearTimeout);
   }
 
   get me() {
@@ -165,6 +189,10 @@ export class DoorComponent implements OnDestroy {
     return typeof r === 'string' ? r : r.name;
   }
 
+  trackByKey(_: number, r: LiveRoll) {
+    return r.key;
+  }
+
   trackByIndex(i: number) {
     return i;
   }
@@ -189,6 +217,7 @@ export class DoorComponent implements OnDestroy {
 
   private update(day: Day | null) {
     this.day = day;
+    this.detectLiveRolls(day);
     this.rounds = (day?.rounds || []).map((r, i) => this.roundView(r, i));
     this.current = this.rounds[this.rounds.length - 1] || null;
     if (day?.winner && this.isWinner && day.pickTarget && !this.available) {
@@ -201,10 +230,51 @@ export class DoorComponent implements OnDestroy {
     this.seen = day ? {day: day.day, revealed: !!day.revealed} : null;
   }
 
+  /**
+   * Neue Würfe anderer seit dem letzten Polling erkennen und live animieren.
+   * Beim ersten Laden eines Türchens wird nichts animiert, nur der Stand gemerkt.
+   */
+  private detectLiveRolls(day: Day | null) {
+    if (!day?.rounds) {
+      return;
+    }
+    if (this.knownDay !== day.day) {
+      this.knownDay = day.day;
+      this.knownRolls = null;
+      this.liveRolls = [];
+    }
+    const keys = new Map<string, { name: string, roll: number[] }>();
+    day.rounds.forEach((round, i) => Object.entries(round.rolls)
+      .forEach(([name, roll]) => keys.set(`${day.day}:${i}:${name}`, {name, roll})));
+    if (this.knownRolls) {
+      keys.forEach(({name, roll}, key) => {
+        if (!this.knownRolls!.has(key) && name !== this.me) {
+          this.playLiveRoll(key, name, roll);
+        }
+      });
+    }
+    this.knownRolls = new Set(keys.keys());
+  }
+
+  private playLiveRoll(key: string, name: string, roll: number[]) {
+    const live: LiveRoll = {key, name, roll, rolling: false, shown: null};
+    this.liveRolls = [...this.liveRolls, live];
+    this.liveTimers.push(setTimeout(() => live.rolling = true, 30));
+    this.liveTimers.push(setTimeout(() => live.shown = roll, LIVE_TUMBLE_MS));
+    this.liveTimers.push(setTimeout(() => {
+      this.liveRolls = this.liveRolls.filter((r) => r !== live);
+      // Rangliste neu aufbauen, damit der Wurf dort erscheint
+      this.rounds = (this.day?.rounds || []).map((r, i) => this.roundView(r, i));
+      this.current = this.rounds[this.rounds.length - 1] || null;
+    }, LIVE_TUMBLE_MS + LAND_MS + LIVE_HOLD_MS));
+  }
+
   private roundView(round: Round, index: number): RoundView {
     const hideMine = this.isDicing;
+    const live = new Set(this.liveRolls.filter((r) => r.key.endsWith(`:${index}:${r.name}`)).map((r) => r.name));
     const rolls = Object.entries(round.rolls)
       .filter(([name]) => !(hideMine && name === this.me))
+      .filter(([name]) => !live.has(name))
       .map(([name, roll]) => ({name, roll, total: roll[0] + roll[1], rank: 0, tie: false}))
       .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
     rolls.forEach((r, i) => r.rank = i > 0 && rolls[i - 1].total === r.total ? rolls[i - 1].rank : i + 1);

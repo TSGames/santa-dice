@@ -6,6 +6,7 @@
  *   DATA_DIR       Verzeichnis für data.json und uploads/ (Default: .)
  *   ADMIN_TOKEN    Token für Admin-Aktionen (Header X-Admin-Token). Leer = Admin deaktiviert.
  *   FAKE_TODAY     Nur für Tests: festes Datum YYYY-MM-DD statt heute.
+ *                  Der Admin kann die geöffneten Türchen zusätzlich per "open-until" festlegen.
  *   CALENDAR_YEAR  Jahr des Kalenders (Default: Jahr von "heute").
  */
 
@@ -32,8 +33,8 @@ function today(): DateTimeImmutable
     return new DateTimeImmutable($fake ?: 'today');
 }
 
-/** Highest day number that is open (0 = none). */
-function openUntil(): int
+/** Highest day number that is open by date (0 = none). */
+function autoOpenUntil(): int
 {
     $today = today();
     $year = (int)(getenv('CALENDAR_YEAR') ?: $today->format('Y'));
@@ -45,6 +46,13 @@ function openUntil(): int
         return DAYS;
     }
     return min(DAYS, (int)$today->format('j'));
+}
+
+/** Highest open day number: admin override if set, otherwise by date. */
+function openUntil(array $data): int
+{
+    $override = $data['settings']['openUntil'];
+    return $override === null ? autoOpenUntil() : max(0, min(DAYS, (int)$override));
 }
 
 function isAdmin(): bool
@@ -106,6 +114,7 @@ function emptyDay(): array
 function normalize(array $data): array
 {
     $data['items'] = $data['items'] ?? [];
+    $data['settings'] = array_merge(['openUntil' => null], $data['settings'] ?? []);
     $days = $data['days'] ?? [];
     for ($d = 1; $d <= DAYS; $d++) {
         $days[(string)$d] = array_merge(emptyDay(), $days[(string)$d] ?? []);
@@ -177,7 +186,7 @@ function publicItem(?array $item): ?array
 
 function calendar(array $data): array
 {
-    $open = openUntil();
+    $open = openUntil($data);
     $days = [];
     for ($d = 1; $d <= DAYS; $d++) {
         $day = $data['days'][(string)$d];
@@ -203,7 +212,11 @@ function calendar(array $data): array
         }
         $days[] = $entry;
     }
-    return ['today' => today()->format('Y-m-d'), 'openUntil' => $open, 'admin' => isAdmin(), 'days' => $days];
+    $result = ['today' => today()->format('Y-m-d'), 'openUntil' => $open, 'admin' => isAdmin(), 'days' => $days];
+    if (isAdmin()) {
+        $result += ['autoOpenUntil' => autoOpenUntil(), 'openOverride' => $data['settings']['openUntil']];
+    }
+    return $result;
 }
 
 // ---------------------------------------------------------------------------
@@ -246,7 +259,7 @@ $save = function () use (&$data, $fp) {
     fflush($fp);
 };
 
-$open = openUntil();
+$open = openUntil($data);
 $response = null;
 
 switch ($action) {
@@ -364,6 +377,20 @@ switch ($action) {
         $d = dayParam();
         if (!$data['days'][(string)$d]['winner']) fail(409, 'no winner yet');
         $data['days'][(string)$d]['revealed'] = true;
+        $save();
+        break;
+
+    case 'open-until':
+        requireAdmin();
+        // null or '' = by date, otherwise open doors 1..value
+        $value = input()['value'] ?? null;
+        if ($value !== null && $value !== '') {
+            $value = (int)$value;
+            if ($value < 0 || $value > DAYS) fail(400, 'invalid day');
+        } else {
+            $value = null;
+        }
+        $data['settings']['openUntil'] = $value;
         $save();
         break;
 

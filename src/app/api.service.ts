@@ -39,6 +39,10 @@ export interface Calendar {
   today: string;
   openUntil: number;
   admin: boolean;
+  /** Nur für Admin: geöffnet nach Datum. */
+  autoOpenUntil?: number;
+  /** Nur für Admin: manuell festgelegt, null = nach Datum. */
+  openOverride?: number | null;
   days: Day[];
 }
 
@@ -62,6 +66,7 @@ const ERRORS: { [key: string]: string } = {
   'item is assigned to a door': 'Der Preis hängt schon an einem Türchen.',
   'prize not revealed yet': 'Der Preis wurde noch nicht freigegeben.',
   'no winner yet': 'Es gibt noch keine Gewinner*in.',
+  'invalid day': 'Ungültiges Türchen.',
 };
 
 @Injectable({providedIn: 'root'})
@@ -135,6 +140,11 @@ export class ApiService {
 
   adminAction(action: 'close' | 'winner' | 'tiebreak' | 'reveal' | 'day-reset', day: number) {
     return this.post<Calendar>(action, {day}).then((c) => this.calendar$.next(c));
+  }
+
+  /** null = nach Datum, sonst Türchen 1 bis value geöffnet. */
+  setOpenUntil(value: number | null) {
+    return this.post<Calendar>('open-until', {value}).then((c) => this.calendar$.next(c));
   }
 
   items() {

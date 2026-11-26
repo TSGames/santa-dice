@@ -18,6 +18,8 @@ Das bestehende Würfeltool wird zu einem Adventskalender umgebaut. Hinter jedem 
 
 - 24 Türchen (1.–24. Dezember).
 - Türchen mit einem Datum bis einschließlich heute lassen sich öffnen. Künftige Türchen sind gesperrt.
+- Der Admin kann festlegen, bis zu welchem Türchen geöffnet ist (z. B. Wochenend-Türchen erst am Montag). „Automatisch“ stellt zurück auf das Datum.
+- Würfe anderer erscheinen live: Die Würfel wirbeln bei allen Zuschauenden kurz und landen, danach wandert der Wurf in die Rangliste.
 - Solange ein geöffnetes Türchen noch nicht ausgewürfelt ist, kann dort weiter eingetragen und gewürfelt werden, auch nach seinem Kalendertag.
 - Die Anordnung der Türchen ist bei jedem Aufruf zufällig. Farbe und Motiv gehören fest zur Türchen-Nummer.
 - Design: nach der Design-Vorlage `docs/design-adventskalender.png` (Farben, Motive je Türchen, Titel, Untertitel, Fußzeile).

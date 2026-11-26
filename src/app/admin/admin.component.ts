@@ -20,6 +20,7 @@ export class AdminComponent {
   preview: string | null = null;
 
   readonly days = Array.from({length: 24}, (_, i) => i + 1);
+  readonly openOptions = Array.from({length: 25}, (_, i) => i);
 
   constructor(public api: ApiService) {
     if (api.adminToken) {
@@ -50,6 +51,16 @@ export class AdminComponent {
     if (!this.items) {
       this.api.adminToken = '';
     }
+  }
+
+  /** Auswahl im Select: 'auto' oder Türchennummer als String. */
+  get openSelection() {
+    const override = this.api.calendar$.value?.openOverride;
+    return override === null || override === undefined ? 'auto' : String(override);
+  }
+
+  async setOpenUntil(value: string) {
+    await this.run(() => this.api.setOpenUntil(value === 'auto' ? null : Number(value)));
   }
 
   edit(item: Item) {

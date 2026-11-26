@@ -43,6 +43,7 @@ data.json
     { "id": "…", "title": "…", "description": "…",
       "link": "https://…", "image": "uploads/<id>.jpg", "assignedDay": 5 | null }
   ],
+  "settings": { "openUntil": 5 | null },
   "days": {
     "5": {
       "itemId": "…" | null,
@@ -68,6 +69,7 @@ Beim Umbau den alten Datenstand (flache Liste `[{name, number}]`) nicht migriere
 | `join` | alle | bei einem geöffneten, noch nicht ausgewürfelten Türchen eintragen |
 | `roll` | eingetragene | in der aktuellen Runde würfeln (Server würfelt) |
 | `pick` | Gewinner\*in | Eintrag fürs nächste Türchen zuordnen |
+| `open-until` | Admin | geöffnete Türchen manuell festlegen (`value` 0–24), `null` = nach Datum |
 | `close`, `winner`, `tiebreak`, `reveal`, `day-reset` | Admin | Runde schließen, Gewinner\*in setzen, Stechen starten, Preis freigeben, Türchen zurücksetzen |
 | `items`, `item-save`, `item-delete`, `upload`, `assign` | Admin | Preisliste pflegen, Bild hochladen, Preis manuell zuordnen |
 
@@ -75,6 +77,7 @@ Schreibende Aktionen per POST.
 
 ### Regeln, die der Server erzwingt (nicht nur das Frontend)
 
+- Geöffnet sind die Türchen bis zum Datum, oder bis zum Wert, den der Admin per `open-until` festgelegt hat.
 - `join`/`roll` sind für jedes Türchen mit Datum ≤ heute offen, solange es keine Gewinner\*in hat. Datum kommt vom Server, nicht vom Client.
 - Pro Runde ein Wurf pro Person. Würfeln nur für Spieler\*innen der aktuellen Runde.
 - `winner` nur bei eindeutiger Höchstsumme, `tiebreak` nur bei Gleichstand. Die neue Runde enthält nur die Gleichstehenden.
