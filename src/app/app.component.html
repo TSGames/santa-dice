@@ -3,37 +3,92 @@
     [ngStyle]="{left:s.x+'%','top':s.y+'%','width':s.size+'px','height':s.size+'px','filter':'blur(2px) brightness(-100)'}">
   </div>
 </div>
+
 <div class=content>
-  <h1>Mitmachen!</h1>
-  <div class=group>
-    <mat-form-field appearance="outline">
-      <mat-label>{{label}}</mat-label>
-      <input matInput type="text" [(ngModel)]="name" [disabled]="isAdded">
-    </mat-form-field>
-    <div><button mat-raised-button color="primary" (click)="addName()" [disabled]="isAdded || !name || name === adminName">Eintragen</button>
+  <header class=header>
+    <h1>{{t.title}}</h1>
+    <div class=progress *ngIf="dices?.length">
+      <div class=progress-text>{{t.progress(dicedCount, dices.length)}}</div>
+      <div class=progress-bar><div class=progress-fill [style.width.%]="dicedCount / dices.length * 100"></div></div>
     </div>
-  </div>
-  <hr>
-  <ng-container *ngIf="name === adminName">
-    <h2 class=admin>Für den Moderator</h2>
+  </header>
+
+  <!-- 1. Beitreten -->
+  <section class="card hero" *ngIf="state === 'join'">
+    <h2>{{t.joinTitle}}</h2>
+    <p class=hint>{{t.joinHint}}</p>
+    <form class=group (ngSubmit)="addName()">
+      <mat-form-field appearance="outline">
+        <mat-label>{{t.label}}</mat-label>
+        <input matInput type="text" name="name" [(ngModel)]="name" autocomplete="off" maxlength="60">
+      </mat-form-field>
+      <button mat-raised-button color="primary" type="submit" [disabled]="!name?.trim() || isAdmin">{{t.join}}</button>
+    </form>
+  </section>
+
+  <!-- 2. Deine Runde -->
+  <section class="card hero mine" *ngIf="state === 'roll'">
+    <h2>{{t.rollTitle}}</h2>
+    <div class=mine-name>{{name}}</div>
+    <div class=big-dice>
+      <ng-container *ngIf="getMyDice()?.number && isDicing; else idleDice">
+        <img *ngFor="let n of getMyDice().number" src="assets/dice-{{n}}.svg" class=rolling alt="{{n}}">
+      </ng-container>
+      <ng-template #idleDice>
+        <span class=placeholder>?</span><span class=placeholder>?</span>
+      </ng-template>
+    </div>
+    <button mat-raised-button color="primary" class=roll-button (click)="startDice()" [disabled]="isDicing">
+      {{isDicing ? 'Würfelt …' : 'Würfeln!'}}
+    </button>
+    <button mat-button class=switch (click)="switchName()" [disabled]="isDicing">{{t.switch}}</button>
+  </section>
+
+  <!-- 3. Ergebnis -->
+  <section class="card hero mine done" *ngIf="state === 'result' && myRank as me">
+    <h2>{{t.resultTitle}}</h2>
+    <div class=mine-name>{{name}}</div>
+    <div class=big-dice>
+      <img *ngFor="let n of me.number" src="assets/dice-{{n}}.svg" alt="{{n}}">
+    </div>
+    <div class=result-line>
+      <span class=sum>{{me.total}}</span>
+      <span class=rank [class.first]="me.rank === 1">
+        {{me.rank === 1 ? '🏆 ' : ''}}Platz {{me.rank}} von {{dices.length}}{{me.tie ? ' (geteilt)' : ''}}
+      </span>
+    </div>
+    <button mat-button class=switch (click)="switchName()">{{t.switch}}</button>
+  </section>
+
+  <!-- Admin -->
+  <section class="card admin" *ngIf="isAdmin">
+    <h2>Für den Moderator</h2>
     <div class=danger>
       <button mat-raised-button color="primary" (click)="reset('reset')" [disabled]="!dices?.length">Alle Würfel zurücksetzen</button>
-      <button mat-raised-button color="warn" (click)="reset('delete')" [disabled]="!dices?.length">Alle Nutzer löschen</button>
+      <button mat-raised-button color="warn" (click)="reset('delete')" [disabled]="!dices?.length">Alle Einträge löschen</button>
     </div>
-    <hr>
-  </ng-container>
-  <h1>Würfel-Ergebnisse</h1>
-  <div class="results">
-    <div *ngFor="let dice of dices" class=dice [class.highest]="sum(highest().number) == sum(dice.number)"
-         [class.dicing]="isDicing && dice.name === name">
-      <div class=name>{{dice.name}}</div>
-      <div class=result>
-        <ng-container *ngIf="!dice.number ">Noch nicht gewürfelt</ng-container>
-        <ng-container *ngIf="dice.number"><img *ngFor="let n of dice.number" src="../assets/dice-{{n}}.svg" class=dice-bg></ng-container>
-      </div>
-      <div class=action *ngIf="dice.name === name && isAdded && !dice.number">
-        <button mat-raised-button color="primary" (click)="startDice()">Würfeln!</button>
-      </div>
-    </div>
-  </div>
+  </section>
+
+  <!-- Rangliste -->
+  <section class="card list" *ngIf="dices">
+    <h2>{{t.rankingTitle}}</h2>
+    <div class=tie-banner *ngIf="hasTopTie">Gleichstand auf Platz 1: Stechen!</div>
+    <div class=empty *ngIf="!dices.length">{{t.empty}}</div>
+    <div class=empty *ngIf="dices.length && !ranking.length">Noch hat niemand gewürfelt.</div>
+    <ol class=ranking>
+      <li *ngFor="let d of ranking" class=row [class.first]="d.rank === 1" [class.me]="d.name === name">
+        <span class=pos>{{d.rank === 1 ? '🏆' : d.rank + '.'}}</span>
+        <span class=name>{{d.name}}<span class=tie-tag *ngIf="d.tie">gleichauf</span></span>
+        <span class=dice-pair><img *ngFor="let n of d.number" src="assets/dice-{{n}}.svg" alt="{{n}}"></span>
+        <span class=total>{{d.total}}</span>
+      </li>
+    </ol>
+
+    <ng-container *ngIf="pending.length">
+      <h3>{{t.pendingTitle}} ({{pending.length}})</h3>
+      <ul class=pending>
+        <li *ngFor="let d of pending" [class.me]="d.name === name">{{d.name}}</li>
+      </ul>
+    </ng-container>
+  </section>
 </div>

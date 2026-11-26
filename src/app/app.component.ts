@@ -1,7 +1,46 @@
 import { ApplicationRef, Component, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {environment} from '../environments/environment';
-import {ActivatedRoute, Router} from '@angular/router';
+import {ActivatedRoute} from '@angular/router';
+
+export type Mode = 'names' | 'topics';
+
+const TEXTS = {
+  names: {
+    title: 'Wichteln & Würfeln',
+    joinTitle: 'Mitmachen!',
+    joinHint: 'Trag deinen Namen ein und würfle mit zwei Würfeln. Die höchste Augensumme gewinnt.',
+    label: 'Dein Name',
+    join: 'Eintragen',
+    rollTitle: 'Du bist dran',
+    resultTitle: 'Dein Ergebnis',
+    rankingTitle: 'Rangliste',
+    progress: (diced: number, total: number) => `${diced} von ${total} haben gewürfelt`,
+    pendingTitle: 'Noch nicht gewürfelt',
+    empty: 'Noch niemand dabei. Sei die erste Person!',
+    switch: 'Anderer Name',
+  },
+  topics: {
+    title: 'Themen auswürfeln',
+    joinTitle: 'Thema vorschlagen',
+    joinHint: 'Schlag ein Thema vor und würfle dafür. Das Thema mit der höchsten Augensumme kommt zuerst dran.',
+    label: 'Dein Themenvorschlag',
+    join: 'Vorschlagen',
+    rollTitle: 'Würfle für dein Thema',
+    resultTitle: 'Ergebnis für dein Thema',
+    rankingTitle: 'Themen-Reihenfolge',
+    progress: (diced: number, total: number) => `${diced} von ${total} Themen ausgewürfelt`,
+    pendingTitle: 'Noch nicht ausgewürfelt',
+    empty: 'Noch kein Thema vorgeschlagen.',
+    switch: 'Anderes Thema',
+  },
+};
+
+export interface RankedDice extends Dice {
+  rank: number;
+  total: number;
+  tie: boolean;
+}
 
 @Component({
   selector: 'app-root',
@@ -11,17 +50,13 @@ import {ActivatedRoute, Router} from '@angular/router';
 export class AppComponent {
   constructor(private http: HttpClient, private ngZone: NgZone, private ref: ApplicationRef, private route: ActivatedRoute) {
     this.route.queryParams.subscribe((params) => {
-      if (params.mode === 'topics') {
-        this.label = 'Dein Themenvorschlag';
-      } else {
-        this.label = 'Dein Name';
-      }
+      this.mode = params.mode === 'topics' ? 'topics' : 'names';
+      document.title = this.t.title;
     });
     this.name = localStorage.getItem('name');
     setInterval(() => this.updateList(), 1000);
     this.updateList();
     this.renderSnow();
-
   }
 
   static API_URL = 'api.php';
@@ -32,7 +67,54 @@ export class AppComponent {
   isAdded = false;
   dices: Dice[];
   isDicing = false;
-  label = '';
+  mode: Mode = 'names';
+
+  get t() {
+    return TEXTS[this.mode];
+  }
+
+  get isAdmin() {
+    return !!this.name && this.name === this.adminName;
+  }
+
+  /** 'join' → enter name, 'roll' → own dice pending/rolling, 'result' → own dice done */
+  get state(): 'join' | 'roll' | 'result' {
+    const mine = this.getMyDice();
+    if (!this.isAdded || !mine || this.isAdmin) {
+      return 'join';
+    }
+    return mine.number && !this.isDicing ? 'result' : 'roll';
+  }
+
+  /** Diced entries sorted by sum, competition ranking (1, 1, 3). Own roll in progress is excluded. */
+  get ranking(): RankedDice[] {
+    const diced = (this.dices || [])
+      .filter((d) => d.number && !(this.isDicing && d.name === this.name))
+      .map((d) => ({...d, total: this.sum(d.number), rank: 0, tie: false}))
+      .sort((a, b) => b.total - a.total || a.name.localeCompare(b.name));
+    diced.forEach((d, i) => {
+      d.rank = i > 0 && diced[i - 1].total === d.total ? diced[i - 1].rank : i + 1;
+    });
+    diced.forEach((d) => d.tie = diced.filter((o) => o.total === d.total).length > 1);
+    return diced;
+  }
+
+  get pending(): Dice[] {
+    return (this.dices || []).filter((d) => !d.number || (this.isDicing && d.name === this.name));
+  }
+
+  get myRank(): RankedDice {
+    return this.ranking.find((d) => d.name === this.name);
+  }
+
+  get dicedCount() {
+    return this.ranking.length;
+  }
+
+  get hasTopTie() {
+    const r = this.ranking;
+    return r.length > 1 && r[0].total === r[1].total;
+  }
 
   private renderSnow() {
     this.ngZone.runOutsideAngular(() => {
@@ -71,11 +153,11 @@ export class AppComponent {
     if (JSON.stringify(this.dices) !== JSON.stringify(newDices)) {
       this.dices = newDices;
     }
+    if (!this.isAdded && this.name && !this.isAdmin && newDices?.some((d) => d.name === this.name)) {
+      this.isAdded = true;
+    }
 
 
-  }
-  highest() {
-    return this.dices?.reduce((d1, d2) => this.sum(d1.number) > this.sum(d2.number) ? d1 : d2);
   }
   async reset(mode: 'reset' | 'delete') {
     await this.http.get<Dice[]>(AppComponent.API_URL + '?action=' + mode).toPromise();
@@ -85,17 +167,22 @@ export class AppComponent {
     this.updateList();
   }
   async addName() {
-    this.isAdded = true;
-    if(this.name === this.adminName) {
+    this.name = this.name?.trim();
+    if (!this.name || this.isAdmin) {
       return;
     }
+    this.isAdded = true;
     localStorage.setItem('name', this.name);
     // only add if not in list
     if (!this.getMyDice()) {
-      await this.http.get<Dice[]>(AppComponent.API_URL + '?action=put&name=' + this.name).toPromise();
-      console.log('add');
+      await this.http.get<Dice[]>(AppComponent.API_URL + '?action=put&name=' + encodeURIComponent(this.name)).toPromise();
     }
     this.updateList();
+  }
+  switchName() {
+    this.isAdded = false;
+    this.name = '';
+    localStorage.removeItem('name');
   }
   getMyDice() {
     return this.dices?.filter((d) => d.name === this.name)[0];
@@ -121,7 +208,7 @@ export class AppComponent {
     this.diceNumber();
     setTimeout(async () => {
       clearInterval(int);
-      await this.http.get<Dice[]>(AppComponent.API_URL + '?action=put&name=' + this.name + '&dice=true').toPromise();
+      await this.http.get<Dice[]>(AppComponent.API_URL + '?action=put&name=' + encodeURIComponent(this.name) + '&dice=true').toPromise();
       this.isDicing = false;
       this.updateList();
     }, 5000);
