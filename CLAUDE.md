@@ -14,7 +14,7 @@ Technische Leitplanken für dieses Projekt. Die fachliche Spezifikation des lauf
   - `ApiService`: alle API-Aufrufe, Polling des Kalenders (2 s), Name und Admin-Token im `localStorage`.
   - `CalendarComponent`, `DoorComponent`, `AdminComponent`: die drei Seiten.
   - `DieComponent`: 3D-Würfel (wiederverwenden), `SnowComponent`: Schnee als Canvas außerhalb der Change Detection.
-- Backend: eine Datei `src/api.php`, Daten als JSON in `DATA_DIR` (Default `.`, im Docker-Image `/data`), Schreibzugriffe mit `flock`.
+- Backend: eine Datei `src/api.php`, Daten als JSON in `DATA_DIR` (Default `.`, im Docker-Image `/data`). Eine gemeinsame Lock-Datei `.lock` (`flock`, lesen geteilt, schreiben exklusiv), geänderte Dateien werden atomar geschrieben (Temp-Datei + `rename`).
 - Deployment: `Dockerfile` (php:8.3-apache), GitHub Actions (`.github/workflows/docker.yml`) pusht das Image nach ghcr.io.
 
 ## Lokale Entwicklung
@@ -38,8 +38,21 @@ E2E-Tests (Playwright, `e2e/`): `npm run e2e` baut für Production und testet ge
 
 ### Datenmodell (`DATA_DIR`)
 
+Drei Dateien, damit ein Wurf nie Preisliste oder Einstellungen anfasst:
+
 ```
-data.json
+settings.json   { "openUntil": 5 | null }
+items.json      [ { "id": "…", "title": "…", … } ]
+days.json       { "1": { … }, …, "24": { … } }
+uploads/<id>.<ext>
+.lock
+```
+
+Eine vorhandene `data.json` (früheres Format, alles in einer Datei) wird beim ersten Request automatisch aufgeteilt und als `data.json.migrated` behalten. `dev/seed.json` nutzt bewusst dieses Format und wird so beim Seeden aufgeteilt.
+
+Aufbau zusammengefasst:
+
+```
 {
   "items": [
     { "id": "…", "title": "…", "description": "…",
@@ -58,7 +71,6 @@ data.json
     }
   }
 }
-uploads/<id>.<ext>
 ```
 
 Beim Umbau den alten Datenstand (flache Liste `[{name, number}]`) nicht migrieren. Neues Format ab leerer Datei.

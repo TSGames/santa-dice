@@ -101,16 +101,16 @@ test('10 participants in parallel browsers through the whole door flow', async (
 
 test('tiebreak in the browser with a fixed tie', async ({browser, request}) => {
   const day = 3;
-  // Prepare a tie at the top directly in the data file (the server reads it on every request)
-  const file = resolve(__dirname, '.data/data.json');
-  const data = JSON.parse(readFileSync(file, 'utf8'));
-  data.days[String(day)] = {
-    ...data.days[String(day)],
+  // Prepare a tie at the top directly in days.json (the server reads it on every request)
+  const file = resolve(__dirname, '.data/days.json');
+  const days = JSON.parse(readFileSync(file, 'utf8'));
+  days[String(day)] = {
+    ...days[String(day)],
     participants: ['Anna', 'Ben', 'Carla'],
     rounds: [{players: ['Anna', 'Ben', 'Carla'], rolls: {Anna: [6, 6], Ben: [6, 6], Carla: [1, 2]}, closed: false}],
     winner: null, revealed: false, pickedFor: null,
   };
-  writeFileSync(file, JSON.stringify(data));
+  writeFileSync(file, JSON.stringify(days));
 
   const players = await Promise.all(['Anna', 'Ben', 'Carla'].map((name) => newUser(browser, {name})));
   const [anna, ben, carla] = players.map((p) => p.page);

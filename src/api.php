@@ -3,7 +3,7 @@
  * Adventskalender-Backend. Spezifikation: Backlog.md, Leitplanken: CLAUDE.md.
  *
  * Umgebungsvariablen:
- *   DATA_DIR       Verzeichnis für data.json und uploads/ (Default: .)
+ *   DATA_DIR       Verzeichnis für settings.json, items.json, days.json und uploads/ (Default: .)
  *   ADMIN_TOKEN    Token für Admin-Aktionen (Header X-Admin-Token). Leer = Admin deaktiviert.
  *   FAKE_TODAY     Nur für Tests: festes Datum YYYY-MM-DD statt heute.
  *                  Der Admin kann die geöffneten Türchen zusätzlich per "open-until" festlegen.
@@ -18,7 +18,13 @@ const MAX_UPLOAD_BYTES = 500 * 1024;
 const IMAGE_TYPES = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
 
 $dataDir = rtrim(getenv('DATA_DIR') ?: '.', '/');
-$dataFile = $dataDir . '/data.json';
+// Storage: one JSON file per part, all guarded by one lock file (see CLAUDE.md)
+$files = [
+    'settings' => "$dataDir/settings.json",
+    'items' => "$dataDir/items.json",
+    'days' => "$dataDir/days.json",
+];
+$legacyFile = "$dataDir/data.json";
 $uploadDir = $dataDir . '/uploads';
 
 function fail(int $status, string $message): void
@@ -26,6 +32,34 @@ function fail(int $status, string $message): void
     http_response_code($status);
     echo json_encode(['error' => $message]);
     exit;
+}
+
+function encodeJson($value): string
+{
+    return json_encode($value, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
+}
+
+/** Replaces a file in one step, so a crash never leaves it half written. */
+function writeAtomic(string $file, string $content): void
+{
+    $tmp = "$file.tmp";
+    if (file_put_contents($tmp, $content) === false || !rename($tmp, $file)) {
+        fail(500, 'write failed');
+    }
+}
+
+/**
+ * Splits the former single data.json into settings/items/days.
+ * The old file is kept as data.json.migrated. The old flat list format is dropped (see CLAUDE.md).
+ */
+function migrateLegacy(string $legacyFile, array $files): void
+{
+    $decoded = json_decode((string)file_get_contents($legacyFile), true);
+    $old = is_array($decoded) && !array_is_list($decoded) ? $decoded : [];
+    foreach ($files as $part => $file) {
+        writeAtomic($file, encodeJson($old[$part] ?? []));
+    }
+    rename($legacyFile, "$legacyFile.migrated");
 }
 
 function today(): DateTimeImmutable
@@ -244,20 +278,33 @@ if (!$isWrite && !in_array($action, ['calendar', 'items', 'available'], true)) {
     fail(405, 'use POST');
 }
 
-$fp = fopen($dataFile, 'c+');
-if (!$fp || !flock($fp, $isWrite ? LOCK_EX : LOCK_SH)) {
+$lock = fopen("$dataDir/.lock", 'c');
+// Reads share the lock, writes and the one-time migration from data.json need it exclusively
+$needsMigration = is_file($legacyFile) && !is_file($files['days']);
+if (!$lock || !flock($lock, $isWrite || $needsMigration ? LOCK_EX : LOCK_SH)) {
     fail(500, 'lock failed');
 }
-$raw = stream_get_contents($fp);
-$decoded = json_decode($raw ?: '{}', true);
-// Altes Format (flache Liste) wird verworfen, siehe CLAUDE.md
-$data = normalize(is_array($decoded) && !array_is_list($decoded) ? $decoded : []);
+if (is_file($legacyFile) && !is_file($files['days'])) {
+    migrateLegacy($legacyFile, $files);
+}
 
-$save = function () use (&$data, $fp) {
-    ftruncate($fp, 0);
-    rewind($fp);
-    fwrite($fp, json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES));
-    fflush($fp);
+$stored = [];
+foreach ($files as $part => $file) {
+    $decoded = is_file($file) ? json_decode((string)file_get_contents($file), true) : null;
+    $stored[$part] = is_array($decoded) ? $decoded : [];
+}
+$data = normalize($stored);
+$loaded = array_map('encodeJson', $data);
+
+/** Writes only the parts that changed, each atomically (temp file + rename). */
+$save = function () use (&$data, &$loaded, $files) {
+    foreach ($files as $part => $file) {
+        $json = encodeJson($data[$part]);
+        if ($json !== $loaded[$part]) {
+            writeAtomic($file, $json);
+            $loaded[$part] = $json;
+        }
+    }
 };
 
 $open = openUntil($data);
@@ -492,7 +539,7 @@ switch ($action) {
         fail(400, 'unknown action');
 }
 
-flock($fp, LOCK_UN);
-fclose($fp);
+flock($lock, LOCK_UN);
+fclose($lock);
 
 echo json_encode($response ?? calendar($data), JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
