@@ -128,5 +128,8 @@
       }
     }
   },
-  "defaultProject": "santa-dice"
+  "defaultProject": "santa-dice",
+  "cli": {
+    "analytics": false
+  }
 }
