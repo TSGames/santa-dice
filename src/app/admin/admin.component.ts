@@ -1,5 +1,6 @@
 import { Component } from '@angular/core';
 import { ApiService, Item } from '../api.service';
+import { shrinkImage } from '../image-resize';
 
 const EMPTY: Partial<Item> = {title: '', description: '', link: ''};
 
@@ -18,6 +19,8 @@ export class AdminComponent {
   form: Partial<Item> = {...EMPTY};
   file: File | null = null;
   preview: string | null = null;
+  /** Hinweis, wenn das Bild beim Auswählen verkleinert wurde. */
+  fileInfo: string | null = null;
 
   readonly days = Array.from({length: 24}, (_, i) => i + 1);
   readonly openOptions = Array.from({length: 25}, (_, i) => i);
@@ -66,6 +69,7 @@ export class AdminComponent {
   edit(item: Item) {
     this.form = {...item};
     this.file = null;
+    this.fileInfo = null;
     this.preview = item.image;
     window.scrollTo({top: 0, behavior: 'smooth'});
   }
@@ -74,10 +78,25 @@ export class AdminComponent {
     this.form = {...EMPTY};
     this.file = null;
     this.preview = null;
+    this.fileInfo = null;
   }
 
-  onFile(event: Event) {
-    const file = (event.target as HTMLInputElement).files?.[0] || null;
+  async onFile(event: Event) {
+    const original = (event.target as HTMLInputElement).files?.[0] || null;
+    let file: File | null = null;
+    if (original) {
+      this.busy = true;
+      this.error = null;
+      try {
+        file = await shrinkImage(original);
+        const kb = (f: File) => Math.round(f.size / 1024) + ' KB';
+        this.fileInfo = file !== original ? `Verkleinert von ${kb(original)} auf ${kb(file)}` : null;
+      } catch (e) {
+        this.error = (e as Error).message;
+      } finally {
+        this.busy = false;
+      }
+    }
     this.file = file;
     if (this.preview?.startsWith('blob:')) {
       URL.revokeObjectURL(this.preview);

@@ -67,6 +67,7 @@ const ERRORS: { [key: string]: string } = {
   'prize not revealed yet': 'Der Preis wurde noch nicht freigegeben.',
   'no winner yet': 'Es gibt noch keine Gewinner*in.',
   'invalid day': 'Ungültiges Türchen.',
+  'image too large (max 500 KB)': 'Das Bild ist größer als 500 KB.',
 };
 
 @Injectable({providedIn: 'root'})

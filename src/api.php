@@ -13,7 +13,8 @@
 header('Content-Type: application/json');
 
 const DAYS = 24;
-const MAX_UPLOAD_BYTES = 5 * 1024 * 1024;
+// Frontend shrinks images to this size before upload (see image-resize.ts)
+const MAX_UPLOAD_BYTES = 500 * 1024;
 const IMAGE_TYPES = ['image/jpeg' => 'jpg', 'image/png' => 'png', 'image/webp' => 'webp', 'image/gif' => 'gif'];
 
 $dataDir = rtrim(getenv('DATA_DIR') ?: '.', '/');
@@ -451,7 +452,7 @@ switch ($action) {
         if (!findItem($data, $id)) fail(404, 'item not found');
         $file = $_FILES['image'] ?? null;
         if (!$file || $file['error'] !== UPLOAD_ERR_OK) fail(400, 'upload failed');
-        if ($file['size'] > MAX_UPLOAD_BYTES) fail(413, 'image too large (max 5 MB)');
+        if ($file['size'] > MAX_UPLOAD_BYTES) fail(413, 'image too large (max 500 KB)');
         $mime = (new finfo(FILEINFO_MIME_TYPE))->file($file['tmp_name']);
         if (!isset(IMAGE_TYPES[$mime])) fail(415, 'only jpeg, png, webp or gif');
         if (!is_dir($uploadDir)) mkdir($uploadDir, 0775, true);

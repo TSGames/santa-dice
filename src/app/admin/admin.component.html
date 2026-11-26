@@ -54,7 +54,8 @@
           <input type="file" accept="image/jpeg,image/png,image/webp,image/gif" (change)="onFile($event)">
           <span>{{preview ? 'Bild ändern' : 'Bild hochladen'}}</span>
         </label>
-        <span class=hint>JPEG, PNG, WebP oder GIF, max. 5 MB</span>
+        <span class=hint>JPEG, PNG, WebP oder GIF, größere Bilder werden automatisch auf max. 500 KB verkleinert</span>
+        <span class=hint *ngIf="fileInfo">{{fileInfo}}</span>
       </div>
       <div class=actions>
         <button mat-button type="button" (click)="reset()" *ngIf="form.id">Abbrechen</button>
