@@ -43,4 +43,4 @@ npm run backend   # PHP backend on :8081 (src/api.php is mounted live)
 npm start         # ng serve on :4200, proxies /api.php to the backend
 ```
 
-`npm run backend:reset` stops the backend and deletes its data volume.
+`npm run backend:reset` stops the backend and deletes its data volume, `npm run backend:seed` loads test data from `dev/seed.json` into the running backend.
