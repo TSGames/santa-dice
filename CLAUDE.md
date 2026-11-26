@@ -1,0 +1,84 @@
+# CLAUDE.md
+
+Technische Leitplanken für dieses Projekt. Die fachliche Spezifikation des laufenden Umbaus zum Adventskalender steht in [Backlog.md](Backlog.md). Sie ist die Quelle für Abläufe und Regeln.
+
+## Grundregeln
+
+- UI-Texte, Spezifikation und Doku auf Deutsch. Code-Bezeichner und Commit-Messages auf Englisch.
+- Keine Personennamen in Backlog, Doku, Kommentare oder Commits. Rollen verwenden (Admin, Teilnehmende, Gewinner\*in).
+- Personenbezogene Testdaten nur mit Fantasienamen in `dev/seed.json`.
+
+## Stack
+
+- Frontend: Angular 15 + Angular Material, eine Komponente `AppComponent` plus `DieComponent` (3D-Würfel, wiederverwenden).
+- Backend: eine Datei `src/api.php`, Daten als JSON in `DATA_DIR` (Default `.`, im Docker-Image `/data`), Schreibzugriffe mit `flock`.
+- Deployment: `Dockerfile` (php:8.3-apache), GitHub Actions (`.github/workflows/docker.yml`) pusht das Image nach ghcr.io.
+
+## Lokale Entwicklung
+
+```sh
+npm run backend        # PHP-Backend auf :8081, src/api.php live gemountet
+npm start              # ng serve auf :4200, Proxy /api.php → :8081
+npm run backend:seed   # Testdaten aus dev/seed.json laden
+npm run backend:reset  # Backend stoppen und Daten-Volume löschen
+```
+
+`ng build` baut standardmäßig für Production. Nur dieser Build kopiert `api.php` nach `dist/`.
+
+## Zielarchitektur Adventskalender
+
+### Datenmodell (`DATA_DIR`)
+
+```
+data.json
+{
+  "items": [
+    { "id": "…", "title": "…", "description": "…",
+      "link": "https://…", "image": "uploads/<id>.jpg", "assignedDay": 5 | null }
+  ],
+  "days": {
+    "5": {
+      "itemId": "…" | null,
+      "participants": ["…"],
+      "rounds": [ { "players": ["…"], "rolls": { "<name>": [3, 6] } } ],
+      "closed": false,
+      "winner": "…" | null,
+      "nextPickedBy": "…" | null
+    }
+  }
+}
+uploads/<id>.<ext>
+```
+
+Beim Umbau den alten Datenstand (flache Liste `[{name, number}]`) nicht migrieren. Neues Format ab leerer Datei.
+
+### API (`api.php?action=…`)
+
+| Aktion | Wer | Zweck |
+|---|---|---|
+| `calendar` | alle | Tage mit Status, bis heute inkl. Preis und Ergebnis, künftige ohne Preis |
+| `join` | alle | bei einem geöffneten, noch nicht ausgewürfelten Türchen eintragen |
+| `roll` | eingetragene | in der aktuellen Runde würfeln (Server würfelt) |
+| `pick` | Gewinner\*in | Eintrag fürs nächste Türchen zuordnen |
+| `close`, `winner`, `tiebreak` | Admin | Runde schließen, Gewinner\*in setzen, Stechen starten |
+| `items`, `item-save`, `item-delete`, `upload`, `assign` | Admin | Preisliste pflegen, Bild hochladen, Preis manuell zuordnen |
+
+Schreibende Aktionen per POST.
+
+### Regeln, die der Server erzwingt (nicht nur das Frontend)
+
+- `join`/`roll` sind für jedes Türchen mit Datum ≤ heute offen, solange es keine Gewinner\*in hat. Datum kommt vom Server, nicht vom Client.
+- Pro Runde ein Wurf pro Person. Würfeln nur für Spieler\*innen der aktuellen Runde.
+- `winner` nur bei eindeutiger Höchstsumme, `tiebreak` nur bei Gleichstand. Die neue Runde enthält nur die Gleichstehenden.
+- Ein Eintrag kann nur einem Türchen zugeordnet werden. `pick` nur durch die Gewinner\*in eines Türchens, einmal pro Gewinn, für das nächste Türchen ohne Preis.
+- Künftige Türchen liefern keinen Preis aus.
+- Alle Einträge sind gleichartig (Bild, Beschreibung, Link). Keine Typunterscheidung zwischen Sachpreis und Video o. Ä.
+- Admin-Aktionen erfordern ein Token aus der Umgebungsvariable `ADMIN_TOKEN` (Header). Der bisherige Mechanismus „Name = Admin“ entfällt.
+- Uploads: nur Bildtypen (jpeg, png, webp, gif), Größenlimit, Dateiname serverseitig aus der ID, nie aus dem Upload.
+
+### Frontend
+
+- Kalenderansicht mit 24 Türchen. Die Tagesmischung erfolgt deterministisch mit dem Datum als Seed, damit alle dieselbe Anordnung sehen.
+- Türchen-Detail: Eintragen, Würfeln (bestehender Flow mit `DieComponent`), Rundenübersicht inkl. Stechen, Preis-Hervorhebung.
+- Admin-Bereich als eigene Route `/admin` (Token-Eingabe, Speicherung im `localStorage`).
+- Rangliste: berechnete Listen cachen und `trackBy` nutzen. Die Schnee-Animation löst 60×/s Change Detection aus, sonst flackert die Liste.
