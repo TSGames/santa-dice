@@ -4,6 +4,11 @@
   </div>
 </div>
 
+<div class=confetti aria-hidden="true" *ngIf="confetti.length">
+  <i *ngFor="let c of confetti" [style.left.%]="c.x" [style.background]="c.color"
+     [style.animation-delay.ms]="c.delay" [style.animation-duration.ms]="c.duration" [style.--r]="c.rotate + 'deg'"></i>
+</div>
+
 <div class=content>
   <header class=header>
     <h1>{{t.title}}</h1>
@@ -31,12 +36,8 @@
     <h2>{{t.rollTitle}}</h2>
     <div class=mine-name>{{name}}</div>
     <div class=big-dice>
-      <ng-container *ngIf="getMyDice()?.number && isDicing; else idleDice">
-        <img *ngFor="let n of getMyDice().number" src="assets/dice-{{n}}.svg" class=rolling alt="{{n}}">
-      </ng-container>
-      <ng-template #idleDice>
-        <span class=placeholder>?</span><span class=placeholder>?</span>
-      </ng-template>
+      <app-die [value]="myRoll?.[0] ?? null" [rolling]="isDicing" [size]="76"></app-die>
+      <app-die [value]="myRoll?.[1] ?? null" [rolling]="isDicing" [size]="76" [delay]="120"></app-die>
     </div>
     <button mat-raised-button color="primary" class=roll-button (click)="startDice()" [disabled]="isDicing">
       {{isDicing ? 'Würfelt …' : 'Würfeln!'}}
@@ -49,10 +50,10 @@
     <h2>{{t.resultTitle}}</h2>
     <div class=mine-name>{{name}}</div>
     <div class=big-dice>
-      <img *ngFor="let n of me.number" src="assets/dice-{{n}}.svg" alt="{{n}}">
+      <app-die *ngFor="let n of me.number" [value]="n" [size]="76"></app-die>
     </div>
     <div class=result-line>
-      <span class=sum>{{me.total}}</span>
+      <span class=sum [class.pop]="shownSum !== null">{{shownSum ?? me.total}}</span>
       <span class=rank [class.first]="me.rank === 1">
         {{me.rank === 1 ? '🏆 ' : ''}}Platz {{me.rank}} von {{dices.length}}{{me.tie ? ' (geteilt)' : ''}}
       </span>

@@ -1,0 +1,11 @@
+<div class="scene" [style.--size.px]="size" [class.idle]="!value && !rolling" [class.rolling]="rolling && !landing" [class.landing]="landing"
+     [style.animation-delay.ms]="delay" role="img" [attr.aria-label]="value ? 'Würfel zeigt ' + value : 'Würfel'">
+  <div class="hop" [style.animation-delay.ms]="delay">
+    <div class="cube" #cube>
+      <div *ngFor="let f of faces" class="face f{{f}}">
+        <span *ngFor="let c of cells" class="cell"><i *ngIf="hasPip(f, c)" class="pip"></i></span>
+      </div>
+    </div>
+  </div>
+  <div class="shadow" [style.animation-delay.ms]="delay"></div>
+</div>

@@ -2,6 +2,7 @@ import { ApplicationRef, Component, NgZone } from '@angular/core';
 import { HttpClient } from '@angular/common/http';
 import {environment} from '../environments/environment';
 import {ActivatedRoute} from '@angular/router';
+import {LAND_MS} from './die.component';
 
 export type Mode = 'names' | 'topics';
 
@@ -68,6 +69,11 @@ export class AppComponent {
   dices: Dice[];
   isDicing = false;
   mode: Mode = 'names';
+  /** Server result for the roll in progress; dice land on it. */
+  myRoll: number[] | null = null;
+  /** Animated sum shown right after landing. */
+  shownSum: number | null = null;
+  confetti: { x: number, delay: number, duration: number, color: string, rotate: number }[] = [];
 
   get t() {
     return TEXTS[this.mode];
@@ -187,31 +193,67 @@ export class AppComponent {
   getMyDice() {
     return this.dices?.filter((d) => d.name === this.name)[0];
   }
-  diceNumber() {
-    // const oldNumber = this.getMyDice().number;
-    // do{
-    this.getMyDice().number = [
-      Math.floor(Math.random() * 6) + 1,
-      Math.floor(Math.random() * 6) + 1,
-    ];
-    // }while(this.getMyDice().number === oldNumber);
-  }
   sum(numbers: number[]) {
     if (!numbers) {
       return 0;
     }
     return numbers?.reduce((a, b) => a + b);
   }
-  startDice() {
+  async startDice() {
+    if (this.isDicing) {
+      return;
+    }
     this.isDicing = true;
-    const int = setInterval(() => this.diceNumber(), 200);
-    this.diceNumber();
-    setTimeout(async () => {
-      clearInterval(int);
-      await this.http.get<Dice[]>(AppComponent.API_URL + '?action=put&name=' + encodeURIComponent(this.name) + '&dice=true').toPromise();
-      this.isDicing = false;
-      this.updateList();
-    }, 5000);
+    this.myRoll = null;
+    this.shownSum = null;
+    const started = Date.now();
+    await this.http.get(AppComponent.API_URL + '?action=put&name=' + encodeURIComponent(this.name) + '&dice=true').toPromise();
+    const list = await this.http.get<Dice[]>(AppComponent.API_URL).toPromise();
+    const result = list?.find((d) => d.name === this.name)?.number;
+    // let the dice tumble a moment for suspense
+    await new Promise((r) => setTimeout(r, Math.max(0, 1600 - (Date.now() - started))));
+    this.myRoll = result || null;
+    await new Promise((r) => setTimeout(r, LAND_MS + 250));
+    this.isDicing = false;
+    this.myRoll = null;
+    this.dices = list;
+    if (result) {
+      this.countUp(this.sum(result));
+      if (this.myRank?.rank === 1) {
+        this.celebrate();
+      }
+    }
+    this.updateList();
+  }
+
+  private countUp(total: number) {
+    const start = performance.now();
+    const duration = 600;
+    const tick = (now: number) => {
+      const p = Math.min(1, (now - start) / duration);
+      this.shownSum = Math.round(total * (1 - Math.pow(1 - p, 3)));
+      if (p < 1) {
+        requestAnimationFrame(tick);
+      } else {
+        setTimeout(() => this.shownSum = null, 50);
+      }
+    };
+    requestAnimationFrame(tick);
+  }
+
+  private celebrate() {
+    if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) {
+      return;
+    }
+    const colors = ['#b3261e', '#c99a06', '#1f7a4d', '#ffffff', '#2b5fd9'];
+    this.confetti = Array.from({length: 90}, () => ({
+      x: Math.random() * 100,
+      delay: Math.random() * 400,
+      duration: 1800 + Math.random() * 1400,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      rotate: Math.random() * 720 - 360,
+    }));
+    setTimeout(() => this.confetti = [], 3600);
   }
 }
 
