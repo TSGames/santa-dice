@@ -92,8 +92,14 @@ export class AppComponent {
     return mine.number && !this.isDicing ? 'result' : 'roll';
   }
 
-  /** Diced entries sorted by sum, competition ranking (1, 1, 3). Own roll in progress is excluded. */
+  private rankingCache: { dices: Dice[], dicing: boolean, name: string, result: RankedDice[] };
+
+  /** Diced entries sorted by sum, competition ranking (1, 1, 3). Own roll in progress is excluded. Cached so ngFor keeps its DOM. */
   get ranking(): RankedDice[] {
+    const c = this.rankingCache;
+    if (c && c.dices === this.dices && c.dicing === this.isDicing && c.name === this.name) {
+      return c.result;
+    }
     const diced = (this.dices || [])
       .filter((d) => d.number && !(this.isDicing && d.name === this.name))
       .map((d) => ({...d, total: this.sum(d.number), rank: 0, tie: false}))
@@ -102,7 +108,16 @@ export class AppComponent {
       d.rank = i > 0 && diced[i - 1].total === d.total ? diced[i - 1].rank : i + 1;
     });
     diced.forEach((d) => d.tie = diced.filter((o) => o.total === d.total).length > 1);
+    this.rankingCache = {dices: this.dices, dicing: this.isDicing, name: this.name, result: diced};
     return diced;
+  }
+
+  trackByName(_: number, d: Dice) {
+    return d.name;
+  }
+
+  trackByIndex(i: number) {
+    return i;
   }
 
   get pending(): Dice[] {

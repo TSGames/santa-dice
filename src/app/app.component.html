@@ -50,7 +50,7 @@
     <h2>{{t.resultTitle}}</h2>
     <div class=mine-name>{{name}}</div>
     <div class=big-dice>
-      <app-die *ngFor="let n of me.number" [value]="n" [size]="76"></app-die>
+      <app-die *ngFor="let n of me.number; trackBy: trackByIndex" [value]="n" [size]="76"></app-die>
     </div>
     <div class=result-line>
       <span class=sum [class.pop]="shownSum !== null">{{shownSum ?? me.total}}</span>
@@ -77,10 +77,10 @@
     <div class=empty *ngIf="!dices.length">{{t.empty}}</div>
     <div class=empty *ngIf="dices.length && !ranking.length">Noch hat niemand gewürfelt.</div>
     <ol class=ranking>
-      <li *ngFor="let d of ranking" class=row [class.first]="d.rank === 1" [class.me]="d.name === name">
+      <li *ngFor="let d of ranking; trackBy: trackByName" class=row [class.first]="d.rank === 1" [class.me]="d.name === name">
         <span class=pos>{{d.rank === 1 ? '🏆' : d.rank + '.'}}</span>
         <span class=name>{{d.name}}<span class=tie-tag *ngIf="d.tie">gleichauf</span></span>
-        <span class=dice-pair><img *ngFor="let n of d.number" src="assets/dice-{{n}}.svg" alt="{{n}}"></span>
+        <span class=dice-pair><img *ngFor="let n of d.number; trackBy: trackByIndex" src="assets/dice-{{n}}.svg" alt="{{n}}"></span>
         <span class=total>{{d.total}}</span>
       </li>
     </ol>
@@ -88,7 +88,7 @@
     <ng-container *ngIf="pending.length">
       <h3>{{t.pendingTitle}} ({{pending.length}})</h3>
       <ul class=pending>
-        <li *ngFor="let d of pending" [class.me]="d.name === name">{{d.name}}</li>
+        <li *ngFor="let d of pending; trackBy: trackByName" [class.me]="d.name === name">{{d.name}}</li>
       </ul>
     </ng-container>
   </section>
