@@ -25,3 +25,13 @@ Run `ng e2e` to execute the end-to-end tests via [Protractor](http://www.protrac
 ## Further help
 
 To get more help on the Angular CLI use `ng help` or go check out the [Angular CLI README](https://github.com/angular/angular-cli/blob/master/README.md).
+
+## Docker
+
+Images are built by GitHub Actions and pushed to `ghcr.io/torsten-simon/santa-dice` (tags: `latest`, branch, `sha-…`, semver on `v*` tags).
+
+```sh
+docker run -d -p 8080:80 -v santa-dice-data:/data ghcr.io/torsten-simon/santa-dice:latest
+```
+
+Data is stored in `/data/data.json` (configurable via `DATA_DIR`).

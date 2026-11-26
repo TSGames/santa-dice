@@ -1,0 +1,9 @@
+node_modules
+dist
+.angular
+.git
+.github
+.idea
+e2e
+Dockerfile
+docker

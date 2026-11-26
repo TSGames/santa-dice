@@ -2,8 +2,9 @@
 header("Content-Type: application/json");
 header("Access-Control-Allow-Origin: *");
 
-define("FILENAME","data.json");
-define("FILE_LOCK","data.lock");
+$dataDir = rtrim(getenv("DATA_DIR") ?: ".", "/");
+define("FILENAME", $dataDir . "/data.json");
+define("FILE_LOCK", $dataDir . "/data.lock");
 
 $fp = fopen(FILE_LOCK, "w+");
 
