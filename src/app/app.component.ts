@@ -1,6 +1,7 @@
 import { Component } from '@angular/core';
 import { ApiService } from './api.service';
 import { FxService } from './fx/fx.service';
+import { keepInputsAboveKeyboard } from './keyboard';
 
 @Component({
   selector: 'app-root',
@@ -10,5 +11,6 @@ import { FxService } from './fx/fx.service';
 export class AppComponent {
   constructor(public api: ApiService, public fx: FxService) {
     api.startPolling();
+    keepInputsAboveKeyboard();
   }
 }
