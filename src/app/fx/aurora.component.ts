@@ -1,6 +1,11 @@
-import { AfterViewInit, Component, ElementRef, NgZone, OnDestroy, ViewChild } from '@angular/core';
+import { AfterViewInit, Component, ElementRef, EventEmitter, NgZone, OnDestroy, Output, ViewChild } from '@angular/core';
 import { createProgram, FxService } from './fx.service';
 import { cssColor, NOISE_GLSL } from './shaders';
+
+/** A shooting star crosses this distance (CSS px) in METEOR_MS, with a tail of METEOR_TAIL px. */
+const METEOR_MS = 1100;
+const METEOR_DISTANCE = 520;
+const METEOR_TAIL = 150;
 
 const VERTEX = `
 attribute vec2 pos;
@@ -15,6 +20,10 @@ uniform vec2 mouse;
 uniform vec3 c1;
 uniform vec3 c2;
 uniform vec3 c3;
+// Shooting star: head and travel direction in canvas pixels (y up), tail length, brightness
+uniform vec4 meteor;
+uniform float meteorLength;
+uniform float meteorAlpha;
 ${NOISE_GLSL}
 void main() {
   vec2 uv = gl_FragCoord.xy / res;
@@ -26,8 +35,8 @@ void main() {
   vec2 grid = gl_FragCoord.xy / 6.0;
   vec2 cell = floor(grid);
   vec2 spot = vec2(hash(cell + 3.1), hash(cell + 5.7)) * 0.6 + 0.2;
-  float dot = smoothstep(0.16, 0.0, length(fract(grid) - spot));
-  float star = step(0.975, hash(cell)) * dot * (0.35 + 0.65 * hash(cell + 7.0)) * smoothstep(1.0, 0.3, y);
+  float starShape = smoothstep(0.16, 0.0, length(fract(grid) - spot));
+  float star = step(0.975, hash(cell)) * starShape * (0.35 + 0.65 * hash(cell + 7.0)) * smoothstep(1.0, 0.3, y);
   col += vec3(star);
   alpha += star;
 
@@ -48,6 +57,15 @@ void main() {
     col += c * v;
     alpha += v;
   }
+  if (meteorAlpha > 0.0) {
+    vec2 rel = gl_FragCoord.xy - meteor.xy;
+    float behind = -dot(rel, meteor.zw);
+    float across = abs(rel.x * meteor.w - rel.y * meteor.z);
+    float tail = behind > -1.0 && behind < meteorLength ? pow(1.0 - behind / meteorLength, 2.0) : 0.0;
+    float m = (smoothstep(1.2, 0.0, across) * tail + exp(-dot(rel, rel) / 5.0)) * meteorAlpha;
+    col += vec3(m);
+    alpha += m;
+  }
   alpha = clamp(alpha, 0.0, 0.9);
   gl_FragColor = vec4(clamp(col, 0.0, 1.0), alpha);
 }
@@ -56,7 +74,8 @@ void main() {
 /**
  * Northern lights and stars on the night sky behind the content (WebGL only, see FxService;
  * without it the plain night gradient from styles.scss remains). Rendered at half resolution,
- * shifts slightly with the pointer.
+ * shifts slightly with the pointer. Every few seconds a shooting star crosses the sky; clicking it
+ * emits (caught).
  */
 @Component({
   selector: 'app-aurora',
@@ -65,6 +84,13 @@ void main() {
 })
 export class AuroraComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas', {static: true}) canvas: ElementRef<HTMLCanvasElement>;
+  /** A shooting star was clicked. */
+  @Output() caught = new EventEmitter<void>();
+
+  /** Current shooting star in CSS pixels, null between them. */
+  private meteor: { x: number, y: number, dx: number, dy: number, start: number } | null = null;
+  private nextMeteor = performance.now() + 4000;
+  private clickHandler = (e: PointerEvent) => this.tryCatch(e.clientX, e.clientY);
 
   private frame = 0;
   private mouse = [0, 0];
@@ -87,6 +113,37 @@ export class AuroraComponent implements AfterViewInit, OnDestroy {
   ngOnDestroy() {
     cancelAnimationFrame(this.frame);
     window.removeEventListener('pointermove', this.moveHandler);
+    window.removeEventListener('pointerdown', this.clickHandler, true);
+  }
+
+  /** Position of the shooting star's head at a time, or null when it is gone. */
+  private meteorHead(now: number) {
+    const m = this.meteor;
+    if (!m) {
+      return null;
+    }
+    const p = (now - m.start) / METEOR_MS;
+    if (p > 1) {
+      return null;
+    }
+    return {x: m.x + m.dx * p * METEOR_DISTANCE, y: m.y + m.dy * p * METEOR_DISTANCE, p};
+  }
+
+  /** A click near the head or along the tail catches the shooting star. */
+  private tryCatch(x: number, y: number) {
+    const head = this.meteorHead(performance.now());
+    const m = this.meteor;
+    if (!head || !m) {
+      return;
+    }
+    // Distance to the segment from the head back along the tail
+    const tx = head.x - m.dx * METEOR_TAIL;
+    const ty = head.y - m.dy * METEOR_TAIL;
+    const along = Math.max(0, Math.min(1, ((x - tx) * (head.x - tx) + (y - ty) * (head.y - ty)) / (METEOR_TAIL * METEOR_TAIL)));
+    if (Math.hypot(x - (tx + (head.x - tx) * along), y - (ty + (head.y - ty) * along)) < 40) {
+      this.meteor = null;
+      this.zone.run(() => this.caught.emit());
+    }
   }
 
   private start() {
@@ -100,6 +157,7 @@ export class AuroraComponent implements AfterViewInit, OnDestroy {
       this.fx.disable('WebGL-Kontext verloren');
     });
     window.addEventListener('pointermove', this.moveHandler, {passive: true});
+    window.addEventListener('pointerdown', this.clickHandler, {capture: true, passive: true});
 
     const program = createProgram(gl, VERTEX, FRAGMENT);
     gl.useProgram(program);
@@ -129,6 +187,7 @@ export class AuroraComponent implements AfterViewInit, OnDestroy {
       gl.uniform2f(u('res'), w, h);
       gl.uniform1f(u('t'), (performance.now() - started) / 1000);
       gl.uniform2f(u('mouse'), this.mouse[0], this.mouse[1]);
+      this.updateMeteor(gl, u, w / innerWidth);
       gl.clearColor(0, 0, 0, 0);
       gl.clear(gl.COLOR_BUFFER_BIT);
       gl.drawArrays(gl.TRIANGLE_STRIP, 0, 4);
@@ -137,5 +196,33 @@ export class AuroraComponent implements AfterViewInit, OnDestroy {
       }
     };
     loop();
+  }
+
+  private updateMeteor(gl: WebGLRenderingContext, u: (name: string) => WebGLUniformLocation | null, scale: number) {
+    const now = performance.now();
+    if (!this.meteor && now > this.nextMeteor) {
+      // Starts in the upper part of the sky and falls diagonally
+      const toRight = Math.random() < .5;
+      const angle = (20 + Math.random() * 20) * Math.PI / 180;
+      this.meteor = {
+        x: innerWidth * (toRight ? .05 + Math.random() * .5 : .45 + Math.random() * .5),
+        y: innerHeight * (.04 + Math.random() * .25),
+        dx: Math.cos(angle) * (toRight ? 1 : -1),
+        dy: Math.sin(angle),
+        start: now,
+      };
+      this.nextMeteor = now + METEOR_MS + 6000 + Math.random() * 9000;
+    }
+    const head = this.meteorHead(now);
+    if (!head) {
+      this.meteor = null;
+      gl.uniform1f(u('meteorAlpha'), 0);
+      return;
+    }
+    const m = this.meteor!;
+    // Canvas pixels are half size and y points up
+    gl.uniform4f(u('meteor'), head.x * scale, (innerHeight - head.y) * scale, m.dx, -m.dy);
+    gl.uniform1f(u('meteorLength'), METEOR_TAIL * scale);
+    gl.uniform1f(u('meteorAlpha'), Math.sin(head.p * Math.PI) * 1.4);
   }
 }

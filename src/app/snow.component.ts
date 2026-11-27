@@ -142,6 +142,7 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
     ctx.shadowBlur = 3;
     ctx.beginPath();
     const p = this.pointer;
+    const wind = this.snow.wind();
     for (let i = 0; i < this.flakes.length; i++) {
       const f = this.flakes[i];
       if (p) {
@@ -159,7 +160,7 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
       f.vy *= .9;
       const prevY = f.y;
       f.y += f.speed + f.vy;
-      f.x += f.drift * .4 + f.vx;
+      f.x += f.drift * .4 + f.vx + wind * (.4 + f.r * .15);
       if (this.settle(f, prevY, ledges)) {
         this.flakes[i] = this.flake(-5, false);
         if (f.extra) {

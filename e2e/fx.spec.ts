@@ -14,13 +14,13 @@ test('without fast WebGL the plain fallback is used', async ({browser}) => {
   page.on('pageerror', (e) => errors.push(e.message));
   await page.goto('/#/');
   await expect(page.locator('.door').first()).toBeVisible();
-  await expect(page.locator('app-aurora, app-frost, app-tree')).toHaveCount(0);
+  await expect(page.locator('app-aurora, app-frost, app-tree, app-lights, app-deep-snow')).toHaveCount(0);
   await expect(page.locator('svg.deco')).toBeVisible();
   expect(errors).toEqual([]);
   await context.close();
 });
 
-test('forced on: aurora, frost and tree render, 3D dice land on the server result', async ({browser, request}) => {
+test('forced on: aurora, snow layers, lights, frost and tree render, shooting stars can be caught, 3D dice land on the server result', async ({browser, request}) => {
   const name = 'Effekt';
   await api(request, 'join', {day: DAY, name});
   const context = await browser.newContext();
@@ -37,6 +37,22 @@ test('forced on: aurora, frost and tree render, 3D dice land on the server resul
   await expect(page.locator('app-aurora canvas')).toHaveCount(1);
   await expect(page.locator('app-frost canvas')).toHaveCount(1);
   await expect(page.locator('app-tree canvas')).toHaveCount(1);
+
+  await expect(page.locator('app-deep-snow canvas')).toHaveCount(2);
+  await expect(page.locator('app-lights canvas')).toHaveCount(1);
+
+  // Shooting stars: probe the sky with clicks until one is caught
+  const caught = page.getByText('Sternschnuppe gefangen!');
+  await expect(async () => {
+    await page.evaluate(() => {
+      for (let x = 20; x < innerWidth; x += 50) {
+        for (let y = 10; y < innerHeight * .55; y += 50) {
+          window.dispatchEvent(new PointerEvent('pointerdown', {clientX: x, clientY: y}));
+        }
+      }
+    });
+    await expect(caught).toBeVisible({timeout: 200});
+  }).toPass({timeout: 25_000, intervals: [100]});
 
   await page.goto(`/#/tuer/${DAY}`);
   await expect(page.locator('app-dice-3d canvas')).toBeVisible();

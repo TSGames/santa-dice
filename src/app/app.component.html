@@ -1,4 +1,9 @@
-<app-aurora *ngIf="fx.enabled$ | async"></app-aurora>
+<ng-container *ngIf="fx.enabled$ | async">
+  <app-aurora (caught)="starCaught()"></app-aurora>
+  <app-deep-snow layer="back"></app-deep-snow>
+  <app-deep-snow layer="front"></app-deep-snow>
+</ng-container>
+<div class=toast role=status *ngIf="toast">{{toast}}</div>
 <app-snow></app-snow>
 
 <main class=content>
