@@ -1,4 +1,4 @@
-<section class=frame>
+<section class=frame data-snow>
   <header class=head>
     <div>
       <h1>OER-Adventskalender</h1>
@@ -17,9 +17,11 @@
 
     <div class=doors>
       <ng-container *ngFor="let d of view.doors; trackBy: trackByDay">
-        <a *ngIf="d.open; else lockedDoor" class=door [routerLink]="['/tuer', d.day]"
+        <a *ngIf="d.open; else lockedDoor" class=door [href]="'#/tuer/' + d.day" (click)="open($event, d.day)"
            [class.today]="d.day === view.openUntil" [class.decided]="!!d.winner" [class.revealed]="d.revealed"
-           [attr.aria-label]="'Türchen ' + d.day">
+           [class.opening]="opening === d.day" [attr.aria-label]="'Türchen ' + d.day" data-snow>
+          <span class=inside aria-hidden="true"><span class=inside-glow></span><span class=inside-star>★</span></span>
+          <div class=leaf>
           <app-door-tile [day]="d.day"></app-door-tile>
           <ng-container *ngIf="d.revealed && d.item; else badge">
             <div class=opened>
@@ -32,11 +34,16 @@
             <span class=badge *ngIf="d.winner">🏆 {{d.winner}}</span>
             <span class="badge cta" *ngIf="!d.winner">{{d.participants?.length ? d.participants!.length + ' dabei' : 'Jetzt würfeln'}}</span>
           </ng-template>
+          </div>
         </a>
         <ng-template #lockedDoor>
-          <div class="door locked" [attr.aria-label]="'Türchen ' + d.day + ', noch geschlossen'">
+          <div class="door locked" role=button tabindex=0 data-snow
+               [class.shake]="nudged?.day === d.day && nudged?.shake"
+               (click)="nudge(d.day, view.today)" (keydown.enter)="nudge(d.day, view.today)"
+               [attr.aria-label]="'Türchen ' + d.day + ', noch geschlossen'">
             <app-door-tile [day]="d.day"></app-door-tile>
             <span class=lock aria-hidden="true">🔒</span>
+            <span class=nudge role=status *ngIf="nudged?.day === d.day">{{nudged!.text}}</span>
           </div>
         </ng-template>
       </ng-container>

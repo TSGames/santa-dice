@@ -41,6 +41,9 @@ $theme: mat.define-light-theme((
   --forest: #10372f;
   --gold-icon: #e0b04a;
   --gift: #e9c98c;
+  --door-glow: #fff3c4;
+  --door-glow-soft: rgba(224, 176, 74, .55);
+  --door-shadow: rgba(16, 55, 47, .35);
 
   /* semantische Farben */
   --primary: var(--petrol);

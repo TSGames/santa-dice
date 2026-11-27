@@ -73,12 +73,122 @@ hr {
   }
 
   &.locked {
-    cursor: default;
+    cursor: pointer;
     app-door-tile {
       opacity: .45;
       filter: saturate(.6);
     }
+    &.shake {
+      animation: shake .5s ease;
+      .lock { animation: lock-hop .5s ease; }
+    }
   }
+}
+
+/* Türflügel und Innenraum für die Aufklapp-Animation */
+.door:not(.locked) {
+  perspective: 900px;
+}
+
+.leaf {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  transform-origin: left center;
+  transition: transform .7s cubic-bezier(.55, .05, .35, 1), box-shadow .7s ease;
+  backface-visibility: hidden;
+}
+
+.inside {
+  position: absolute;
+  inset: 0;
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--forest);
+  box-shadow: inset 0 0 18px var(--door-shadow);
+  opacity: 0;
+  transition: opacity .2s ease;
+}
+
+.inside-glow {
+  position: absolute;
+  inset: -20%;
+  background: radial-gradient(circle at 50% 55%, var(--door-glow) 0%, var(--door-glow-soft) 35%, transparent 70%);
+  transform: scale(.4);
+  opacity: 0;
+}
+
+.inside-star {
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  font-size: 2rem;
+  color: var(--gold-icon);
+  transform: translate(-50%, -50%) scale(.2) rotate(-90deg);
+  opacity: 0;
+}
+
+.door.opening {
+  z-index: 2;
+  transform: scale(1.06);
+  .inside { opacity: 1; }
+  .leaf {
+    transform: rotateY(-108deg);
+    box-shadow: -14px 0 24px var(--door-shadow);
+  }
+  .inside-glow { animation: glow .75s ease-out forwards; }
+  .inside-star { animation: star-pop .75s cubic-bezier(.2, .9, .3, 1.4) forwards; }
+}
+
+@keyframes glow {
+  0% { transform: scale(.4); opacity: 0; }
+  60% { opacity: 1; }
+  100% { transform: scale(1.3); opacity: 1; }
+}
+
+@keyframes star-pop {
+  0% { transform: translate(-50%, -50%) scale(.2) rotate(-90deg); opacity: 0; }
+  100% { transform: translate(-50%, -50%) scale(1.4) rotate(0); opacity: 1; }
+}
+
+@keyframes shake {
+  0%, 100% { transform: translateX(0) rotate(0); }
+  15% { transform: translateX(-5px) rotate(-1.5deg); }
+  35% { transform: translateX(5px) rotate(1.5deg); }
+  55% { transform: translateX(-4px) rotate(-1deg); }
+  75% { transform: translateX(3px) rotate(.5deg); }
+}
+
+@keyframes lock-hop {
+  0%, 100% { transform: translateY(0) rotate(0); }
+  30% { transform: translateY(-6px) rotate(-12deg); }
+  60% { transform: translateY(0) rotate(8deg); }
+}
+
+.nudge {
+  position: absolute;
+  left: 50%;
+  bottom: 8px;
+  transform: translateX(-50%);
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: .78rem;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--forest);
+  color: var(--cream);
+  box-shadow: 0 4px 10px var(--door-shadow);
+  animation: nudge-in .25s ease-out;
+  z-index: 3;
+}
+
+@keyframes nudge-in {
+  from { opacity: 0; transform: translate(-50%, 6px); }
+  to { opacity: 1; transform: translate(-50%, 0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .door.locked.shake, .door.locked.shake .lock { animation: none; }
 }
 
 @keyframes pulse {

@@ -3,6 +3,7 @@ import { ActivatedRoute } from '@angular/router';
 import { combineLatest, Subscription } from 'rxjs';
 import { ApiService, Calendar, Day, Item, Round } from '../api.service';
 import { LAND_MS } from '../die.component';
+import { SnowService } from '../snow.service';
 
 export interface RankedRoll {
   name: string;
@@ -74,7 +75,7 @@ export class DoorComponent implements OnDestroy {
   private seen: { day: number, revealed: boolean } | null = null;
   private sub: Subscription;
 
-  constructor(public api: ApiService, route: ActivatedRoute) {
+  constructor(public api: ApiService, route: ActivatedRoute, private snow: SnowService) {
     this.nameInput = api.name;
     this.sub = combineLatest([route.paramMap, api.calendar$]).subscribe(([params, calendar]) => {
       const dayNumber = Number(params.get('day'));
@@ -147,6 +148,7 @@ export class DoorComponent implements OnDestroy {
     }
     this.error = null;
     this.isDicing = true;
+    this.snow.boost(3000);
     this.myRoll = null;
     this.shownSum = null;
     const started = Date.now();
@@ -258,6 +260,7 @@ export class DoorComponent implements OnDestroy {
 
   private playLiveRoll(key: string, name: string, roll: number[]) {
     const live: LiveRoll = {key, name, roll, rolling: false, shown: null};
+    this.snow.boost(2000);
     this.liveRolls = [...this.liveRolls, live];
     this.liveTimers.push(setTimeout(() => live.rolling = true, 30));
     this.liveTimers.push(setTimeout(() => live.shown = roll, LIVE_TUMBLE_MS));

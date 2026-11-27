@@ -13,7 +13,7 @@ Technische Leitplanken für dieses Projekt. Die fachliche Spezifikation des lauf
 - Frontend: Angular 15 + Angular Material, Hash-Routing (`/#/`, `/#/tuer/:day`, `/#/admin`).
   - `ApiService`: alle API-Aufrufe, Polling des Kalenders (2 s), Name und Admin-Token im `localStorage`.
   - `CalendarComponent`, `DoorComponent`, `AdminComponent`: die drei Seiten.
-  - `DieComponent`: 3D-Würfel (wiederverwenden), `SnowComponent`: Schnee als Canvas außerhalb der Change Detection.
+  - `DieComponent`: 3D-Würfel (wiederverwenden), `SnowComponent`: Schnee als Canvas außerhalb der Change Detection, vor dem Inhalt. Weicht dem Mauszeiger aus, bleibt auf Elementen mit `data-snow` und `.card` liegen (wegwischbar), `SnowService.boost()` lässt es kurz stärker schneien (beim Würfeln).
 - Backend: eine Datei `src/api.php`, Daten als JSON in `DATA_DIR` (Default `.`, im Docker-Image `/data`). Eine gemeinsame Lock-Datei `.lock` (`flock`, lesen geteilt, schreiben exklusiv), geänderte Dateien werden atomar geschrieben (Temp-Datei + `rename`).
 - Deployment: `Dockerfile` (php:8.3-apache), GitHub Actions (`.github/workflows/docker.yml`) pusht das Image nach ghcr.io.
 
