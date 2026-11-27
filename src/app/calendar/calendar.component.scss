@@ -17,6 +17,11 @@
   background: var(--paper);
 }
 
+/* Platz für die Lichterkette (WebGL), die oben im Rahmen hängt */
+.frame.lights {
+  padding-top: 72px;
+}
+
 .head {
   display: flex;
   justify-content: space-between;
@@ -298,6 +303,9 @@ hr {
   .frame {
     padding: 18px 14px;
     margin: 12px 0;
+  }
+  .frame.lights {
+    padding-top: 60px;
   }
   .deco {
     display: none;

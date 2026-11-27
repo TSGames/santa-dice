@@ -45,7 +45,8 @@ void main() {
   // Distance to the nearest edge in px, scaled: frost sits at the rim like on a window pane
   float edgePx = min(min(px.x, rect.z - px.x), min(px.y, rect.w - px.y));
   float n = fbm(p * 1.5);
-  float e = edgePx / 60.0 + (n - 0.5) * 0.25;
+  // Relative to the door size, so small doors (phones) keep a clear middle too
+  float e = edgePx / max(24.0, min(rect.z, rect.w) * 0.5) + (n - 0.5) * 0.25;
   float rim = smoothstep(0.45, 0.05, e);
   // A few crystals reach inwards, the middle with the number stays clear
   float ridge = 1.0 - abs(fbm(p * 5.0 + n * 2.0) * 2.0 - 1.0);

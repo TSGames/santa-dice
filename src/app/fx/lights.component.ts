@@ -24,7 +24,7 @@ void main() {
 
 const FRAGMENT = `
 precision mediump float;
-uniform float mode; // 0 = wire, 1 = halo, 2 = bulb
+uniform float mode; // 0 = wire and sockets, 1 = colored halo, 2 = bulb, 3 = bright core flare
 varying vec4 vColor;
 void main() {
   if (mode < 0.5) {
@@ -33,8 +33,13 @@ void main() {
   }
   float d = length(gl_PointCoord - 0.5) * 2.0;
   if (mode < 1.5) {
-    float a = pow(max(0.0, 1.0 - d), 2.2) * vColor.a;
-    gl_FragColor = vec4(vColor.rgb * a, 0.0); // additive glow
+    // Colored light around the bulb, visible on the light frame as well as on the dark sky
+    float a = pow(max(0.0, 1.0 - d), 1.8) * vColor.a;
+    gl_FragColor = vec4(vColor.rgb * a, a);
+  } else if (mode > 2.5) {
+    // Additive hot core, makes the bulb look lit
+    float a = pow(max(0.0, 1.0 - d), 3.0) * vColor.a;
+    gl_FragColor = vec4(mix(vColor.rgb, vec3(1.0), 0.5) * a, 0.0);
   } else {
     // Bulb: slightly oval, bright core
     vec2 p = (gl_PointCoord - 0.5) * vec2(2.0, 1.6);
@@ -46,9 +51,11 @@ void main() {
 `;
 
 /** Distance between bulbs along the wire and how far they hang below it (px). */
-const SPACING = 64;
-const DROP = 12;
-const SAG = 14;
+const SPACING = 82;
+const DROP = 14;
+const SAG = 16;
+const BULB = 18;
+const HALO = 96;
 
 interface Bulb {
   angle: number;
@@ -149,9 +156,10 @@ export class LightsComponent implements AfterViewInit, OnDestroy {
   private draw(gl: WebGLRenderingContext, u: (name: string) => WebGLUniformLocation | null, rect: DOMRect,
                palette: [number, number, number][], wireColor: [number, number, number], dpr: number) {
     const now = performance.now() / 1000;
-    const left = rect.left + 18;
-    const right = rect.right - 18;
-    const top = rect.top - 9;
+    // Hangs inside the frame's top padding (see .frame.lights)
+    const left = rect.left + 22;
+    const right = rect.right - 22;
+    const top = rect.top + 6;
     const width = right - left;
     // Wire: a gentle sag (parabola) that sways a little
     const sway = Math.sin(now * .6) * 2;
@@ -160,7 +168,9 @@ export class LightsComponent implements AfterViewInit, OnDestroy {
       return top + 4 * f * (1 - f) * (SAG + sway);
     };
 
-    const count = Math.max(2, Math.floor(width / SPACING));
+    // Closer together on narrow screens so there are always enough bulbs
+    const spacing = Math.max(46, Math.min(SPACING, width / 12));
+    const count = Math.max(2, Math.floor(width / spacing));
     while (this.bulbs.length < count) {
       const i = this.bulbs.length;
       this.bulbs.push({angle: 0, velocity: 0, color: palette[i % palette.length], phase: Math.random() * 6.28});
@@ -175,6 +185,8 @@ export class LightsComponent implements AfterViewInit, OnDestroy {
     }
     const halos: number[] = [];
     const bulbs: number[] = [];
+    const cores: number[] = [];
+    const sockets: number[] = [];
     this.bulbs.forEach((b, i) => {
       const x = left + width * (i + .5) / count;
       const y = wireY(x);
@@ -188,9 +200,14 @@ export class LightsComponent implements AfterViewInit, OnDestroy {
       const bx = x + Math.sin(b.angle) * DROP;
       const by = y + Math.cos(b.angle) * DROP;
       wire.push(x, y, ...wireColor, .9, 1, bx, by, ...wireColor, .9, 1);
-      const glow = .55 + .25 * Math.sin(now * 1.1 + b.phase);
-      halos.push(bx, by, ...b.color, glow, 56);
-      bulbs.push(bx, by + 1, ...b.color, 1, 11);
+      // Breathes slowly, never blinks
+      const glow = .8 + .2 * Math.sin(now * 1.1 + b.phase);
+      const cx = bx + Math.sin(b.angle) * BULB * .45;
+      const cy = by + Math.cos(b.angle) * BULB * .45;
+      sockets.push(bx, by, ...wireColor, 1, 7);
+      halos.push(cx, cy, ...b.color, .55 * glow, HALO);
+      bulbs.push(cx, cy, ...b.color, 1, BULB);
+      cores.push(cx, cy, ...b.color, .9 * glow, BULB * 2.2);
     });
 
     gl.uniform2f(u('res'), innerWidth, innerHeight);
@@ -202,13 +219,15 @@ export class LightsComponent implements AfterViewInit, OnDestroy {
     gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(wire), gl.DYNAMIC_DRAW);
     gl.drawArrays(gl.LINE_STRIP, 0, 81);
     gl.drawArrays(gl.LINES, 81, this.bulbs.length * 2);
+    const points = (mode: number, data: number[]) => {
+      gl.uniform1f(u('mode'), mode);
+      gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(data), gl.DYNAMIC_DRAW);
+      gl.drawArrays(gl.POINTS, 0, this.bulbs.length);
+    };
+    points(1, halos);
+    points(0, sockets);
+    points(2, bulbs);
     gl.blendFunc(gl.ONE, gl.ONE);
-    gl.uniform1f(u('mode'), 1);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(halos), gl.DYNAMIC_DRAW);
-    gl.drawArrays(gl.POINTS, 0, this.bulbs.length);
-    gl.blendFunc(gl.ONE, gl.ONE_MINUS_SRC_ALPHA);
-    gl.uniform1f(u('mode'), 2);
-    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(bulbs), gl.DYNAMIC_DRAW);
-    gl.drawArrays(gl.POINTS, 0, this.bulbs.length);
+    points(3, cores);
   }
 }
