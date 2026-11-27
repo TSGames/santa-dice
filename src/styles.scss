@@ -45,6 +45,16 @@ $theme: mat.define-light-theme((
   --door-glow-soft: rgba(224, 176, 74, .55);
   --door-shadow: rgba(16, 55, 47, .35);
 
+  /* Seitenhintergrund: Nachthimmel (Polarlicht darauf per WebGL), Text direkt darauf hell */
+  --page-bg: linear-gradient(180deg, var(--night-top) 0%, var(--night-bottom) 100%);
+  --on-page: var(--cream);
+  --on-page-muted: #b9c8c4;
+  --night-top: #071521;
+  --night-bottom: #12303a;
+  --aurora-green: #3ee6a1;
+  --aurora-teal: #2bb5c8;
+  --aurora-violet: #8a6cf0;
+
   /* semantische Farben */
   --primary: var(--petrol);
   --primary-soft: rgba(13, 82, 102, .12);
@@ -68,7 +78,8 @@ body {
   font-size: 16px;
   overflow-x: hidden;
   color: var(--ink);
-  background: var(--paper);
+  background: var(--page-bg);
+  background-attachment: fixed;
 }
 
 h1 {
@@ -78,7 +89,7 @@ h1 {
   font-size: 2rem;
   font-weight: 900;
   text-align: center;
-  color: var(--forest);
+  color: var(--on-page);
 }
 
 a {
@@ -123,11 +134,11 @@ a {
 .back {
   display: inline-block;
   margin: 16px 0 0;
-  color: var(--muted);
+  color: var(--on-page-muted);
   text-decoration: none;
 
   &:hover {
-    color: var(--ink);
+    color: var(--on-page);
   }
 }
 

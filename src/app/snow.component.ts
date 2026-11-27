@@ -64,7 +64,7 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
       window.addEventListener('resize', this.resizeHandler);
       window.addEventListener('pointermove', this.moveHandler, {passive: true});
       document.addEventListener('pointerout', this.leaveHandler, {passive: true});
-      this.baseCount = Math.min(250, Math.round(window.innerWidth * window.innerHeight / 6000));
+      this.baseCount = Math.min(500, Math.round(window.innerWidth * window.innerHeight / 3000));
       for (let i = 0; i < this.baseCount; i++) {
         this.flakes.push(this.flake(Math.random() * window.innerHeight, false));
       }

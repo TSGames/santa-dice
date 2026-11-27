@@ -1,4 +1,4 @@
-/** Shared GLSL snippets for the raw WebGL effects (glow, frost). */
+/** Shared GLSL snippets for the raw WebGL effects (aurora, frost). */
 export const NOISE_GLSL = `
 float hash(vec2 p) {
   p = fract(p * vec2(123.34, 456.21));

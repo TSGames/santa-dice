@@ -12,41 +12,58 @@ precision highp float;
 uniform vec2 res;
 uniform float t;
 uniform vec2 mouse;
-uniform float strength;
-uniform vec3 gold;
-uniform vec3 light;
+uniform vec3 c1;
+uniform vec3 c2;
+uniform vec3 c3;
 ${NOISE_GLSL}
 void main() {
   vec2 uv = gl_FragCoord.xy / res;
-  // Light source just above the top edge, drifting slightly with the pointer
-  vec2 p = vec2((uv.x - 0.5) * res.x / res.y, 1.0 - uv.y);
-  vec2 d = p - vec2(mouse.x * 0.25, -0.25);
-  float dist = length(d);
-  float angle = atan(d.x, d.y);
+  float y = 1.0 - uv.y;
+  vec3 col = vec3(0.0);
+  float alpha = 0.0;
 
-  // Soft rays fanning down, slowly changing
-  float rays = fbm(vec2(angle * 7.0, t * 0.05)) * 0.7 + 0.3 * sin(angle * 18.0 + t * 0.15);
-  rays = smoothstep(0.35, 0.9, rays);
-  float fall = exp(-dist * 1.4);
-  float glow = exp(-dist * dist * 2.5);
+  // Static stars (no blinking), fading towards the horizon
+  vec2 grid = gl_FragCoord.xy / 6.0;
+  vec2 cell = floor(grid);
+  vec2 spot = vec2(hash(cell + 3.1), hash(cell + 5.7)) * 0.6 + 0.2;
+  float dot = smoothstep(0.16, 0.0, length(fract(grid) - spot));
+  float star = step(0.975, hash(cell)) * dot * (0.35 + 0.65 * hash(cell + 7.0)) * smoothstep(1.0, 0.3, y);
+  col += vec3(star);
+  alpha += star;
 
-  float alpha = clamp((glow * 0.7 + rays * fall * 0.55) * strength, 0.0, 0.75);
-  vec3 color = mix(gold, light, glow);
-  gl_FragColor = vec4(color * alpha, alpha);
+  for (int i = 0; i < 3; i++) {
+    float fi = float(i);
+    float x = uv.x * 1.4 + mouse.x * 0.04 * (fi + 1.0);
+    float center = 0.2 + fi * 0.1
+      + 0.06 * sin(x * 2.0 + t * 0.1 * (fi + 1.0) + fi * 2.0)
+      + 0.1 * (fbm(vec2(x * 1.4, t * 0.03 + fi * 3.0)) - 0.5)
+      + mouse.y * 0.02;
+    float d = y - center;
+    // Curtain: bright lower edge, long rays upwards broken up by vertical streaks
+    float rays = 0.35 + 0.65 * fbm(vec2(x * 10.0 + t * 0.06, fi * 4.0 + t * 0.015));
+    float v = (d < 0.0 ? exp(d * 7.0) : exp(-d * d / 0.003)) * rays;
+    v *= 0.55 + 0.45 * sin(x * 2.6 - t * 0.15 + fi * 1.7);
+    v *= i == 0 ? 1.0 : (i == 1 ? 0.75 : 0.45);
+    vec3 c = i == 0 ? c1 : (i == 1 ? c2 : c3);
+    col += c * v;
+    alpha += v;
+  }
+  alpha = clamp(alpha, 0.0, 0.9);
+  gl_FragColor = vec4(clamp(col, 0.0, 1.0), alpha);
 }
 `;
 
 /**
- * Warm light from above behind the content: a golden glow with slowly moving rays
- * (WebGL only, see FxService). Rendered at half resolution, a bit stronger in the evening,
- * the source drifts slightly with the pointer.
+ * Northern lights and stars on the night sky behind the content (WebGL only, see FxService;
+ * without it the plain night gradient from styles.scss remains). Rendered at half resolution,
+ * shifts slightly with the pointer.
  */
 @Component({
-  selector: 'app-glow',
+  selector: 'app-aurora',
   template: '<canvas #canvas aria-hidden="true"></canvas>',
   styles: [':host { position: fixed; inset: 0; pointer-events: none; z-index: 0; } canvas { width: 100%; height: 100%; display: block; }'],
 })
-export class GlowComponent implements AfterViewInit, OnDestroy {
+export class AuroraComponent implements AfterViewInit, OnDestroy {
   @ViewChild('canvas', {static: true}) canvas: ElementRef<HTMLCanvasElement>;
 
   private frame = 0;
@@ -62,7 +79,7 @@ export class GlowComponent implements AfterViewInit, OnDestroy {
       try {
         this.start();
       } catch (e) {
-        this.fx.disable('Licht: ' + (e as Error).message);
+        this.fx.disable('Polarlicht: ' + (e as Error).message);
       }
     });
   }
@@ -93,10 +110,9 @@ export class GlowComponent implements AfterViewInit, OnDestroy {
     gl.enableVertexAttribArray(pos);
     gl.vertexAttribPointer(pos, 2, gl.FLOAT, false, 0, 0);
     const u = (name: string) => gl.getUniformLocation(program, name);
-    gl.uniform3fv(u('gold'), cssColor('--gold-icon', [.88, .69, .29]));
-    gl.uniform3fv(u('light'), cssColor('--door-glow', [1, .95, .77]));
-    const hour = new Date().getHours();
-    gl.uniform1f(u('strength'), hour >= 16 || hour < 7 ? 1 : .75);
+    gl.uniform3fv(u('c1'), cssColor('--aurora-green', [.24, .9, .63]));
+    gl.uniform3fv(u('c2'), cssColor('--aurora-teal', [.17, .71, .78]));
+    gl.uniform3fv(u('c3'), cssColor('--aurora-violet', [.54, .42, .94]));
 
     const check = this.fx.watchdog();
     const started = performance.now();
