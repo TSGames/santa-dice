@@ -42,29 +42,25 @@ void main() {
   if (length(max(q, 0.0)) > 10.0) discard;
 
   vec2 p = px / 90.0 + seed;
-  float edge = min(min(uv.x, 1.0 - uv.x), min(uv.y, 1.0 - uv.y));
-  // Ice grows from the edges inwards, with feathery crystal ridges
-  float base = fbm(p * 1.3);
-  float ridge = 1.0 - abs(fbm(p * 4.0 + base * 2.0) * 2.0 - 1.0);
-  float feather = pow(ridge, 6.0);
-  float cover = smoothstep(0.42, 0.02, edge + (base - 0.5) * 0.3);
-  // Mostly at the edges, only thin crystals in the middle so the number stays readable
-  float ice = clamp(cover * 0.8 + feather * 0.35 * (0.4 + cover) + 0.04, 0.0, 1.0);
+  // Distance to the nearest edge in px, scaled: frost sits at the rim like on a window pane
+  float edgePx = min(min(px.x, rect.z - px.x), min(px.y, rect.w - px.y));
+  float n = fbm(p * 1.5);
+  float e = edgePx / 60.0 + (n - 0.5) * 0.25;
+  float rim = smoothstep(0.45, 0.05, e);
+  // A few crystals reach inwards, the middle with the number stays clear
+  float ridge = 1.0 - abs(fbm(p * 5.0 + n * 2.0) * 2.0 - 1.0);
+  float feather = pow(ridge, 8.0) * smoothstep(0.75, 0.2, e);
+  float ice = clamp(rim * 0.9 + feather * 0.7, 0.0, 1.0);
 
   // Wiped parts from the mask
   float frozen = texture2D(mask, slot.xy + uv * slot.zw).r;
   ice *= smoothstep(0.05, 0.6, frozen);
-  // Thawing: melts away from the middle along the noise
-  ice *= smoothstep(melt, melt + 0.25, base * 0.6 + edge * 0.8);
+  // Thawing: melts from the inside out along the noise
+  ice *= smoothstep(melt, melt + 0.25, 1.0 - e * 0.5 + (n - 0.5) * 0.3);
 
-  // Sparkles
-  vec2 cell = floor(px / 7.0);
-  float h = hash(cell + seed);
-  float twinkle = step(0.985, h) * pow(0.5 + 0.5 * sin(t * (2.0 + h * 4.0) + h * 40.0), 8.0);
-
-  vec3 color = mix(vec3(0.86, 0.93, 0.98), vec3(1.0), feather);
-  float alpha = clamp(ice * 0.7 + twinkle * ice, 0.0, 1.0);
-  gl_FragColor = vec4((color + twinkle) * alpha, alpha);
+  vec3 color = mix(vec3(0.93, 0.97, 1.0), vec3(1.0), feather);
+  float alpha = clamp(ice * 0.88, 0.0, 1.0);
+  gl_FragColor = vec4(color * alpha, alpha);
 }
 `;
 
@@ -74,7 +70,7 @@ interface Melting {
 }
 
 /**
- * Ice on locked doors (WebGL only, see FxService). The pointer wipes it clear, it freezes over
+ * Ice on locked doors without sparkles (WebGL only, see FxService). The pointer wipes it clear, it freezes over
  * again, and a door that opens while the page is visible thaws.
  * Doors are found via [data-day]; locked ones carry the class "locked".
  */

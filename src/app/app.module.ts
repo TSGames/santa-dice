@@ -15,7 +15,7 @@ import { CalendarComponent } from './calendar/calendar.component';
 import { DoorTileComponent } from './calendar/door-tile.component';
 import { DoorComponent } from './door/door.component';
 import { AdminComponent } from './admin/admin.component';
-import { AuroraComponent } from './fx/aurora.component';
+import { GlowComponent } from './fx/glow.component';
 import { FrostComponent } from './fx/frost.component';
 import { Dice3dComponent } from './fx/dice3d.component';
 import { TreeComponent } from './fx/tree.component';
@@ -36,7 +36,7 @@ const routes: Routes = [
     DoorTileComponent,
     DoorComponent,
     AdminComponent,
-    AuroraComponent,
+    GlowComponent,
     FrostComponent,
     Dice3dComponent,
     TreeComponent,
