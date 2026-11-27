@@ -26,6 +26,23 @@ const COL = 3;
 const MAX_CAP = 8;
 /** Chance that a flake hitting a ledge stays there. */
 const SETTLE_CHANCE = .6;
+/** Steepest height step between columns before snow slides sideways (angle of repose). */
+const MAX_SLOPE = 1.1;
+/** Snow (in px of cap height) that slides off a corner per falling flake. */
+const SPILL_PER_FLAKE = 2.5;
+
+interface Ledge {
+  caps: Float32Array;
+  /** Top corner radius of the element; snow does not hold there. */
+  radius: number;
+  spillLeft: number;
+  spillRight: number;
+}
+
+interface VisibleLedge {
+  rect: DOMRect;
+  ledge: Ledge;
+}
 
 /** Schnee auf einem Canvas, komplett außerhalb der Angular Change Detection. Weicht dem Mauszeiger aus. */
 @Component({
@@ -39,7 +56,7 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
 
   private flakes: Flake[] = [];
   /** Snow height per column for each ledge element. */
-  private ledges = new Map<Element, Float32Array>();
+  private ledges = new Map<Element, Ledge>();
   private ticks = 0;
   private baseCount = 0;
   private frame = 0;
@@ -183,38 +200,93 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
           v = Math.max(1, Math.min(4, v + (Math.random() - .5) * 1.2));
           caps[c] = v;
         }
-        this.ledges.set(el, caps);
+        const radius = parseFloat(getComputedStyle(el).borderTopLeftRadius) || 0;
+        this.ledges.set(el, {caps, radius, spillLeft: 0, spillRight: 0});
       }
     }
   }
 
   private visibleLedges(h: number) {
-    const list: { rect: DOMRect, caps: Float32Array }[] = [];
-    this.ledges.forEach((caps, el) => {
+    const list: VisibleLedge[] = [];
+    this.ledges.forEach((ledge, el) => {
       // A door swinging open drops its snow
       if (el.classList.contains('opening')) {
-        caps.fill(0);
+        ledge.caps.fill(0);
         return;
       }
       const rect = el.getBoundingClientRect();
       if (rect.width > 0 && rect.top > -10 && rect.top < h) {
-        list.push({rect, caps});
+        this.slide(rect, ledge);
+        list.push({rect, ledge});
       }
     });
     return list;
   }
 
+  /**
+   * Snow only holds on the flat part of the top edge: too steep piles slide sideways, and whatever
+   * reaches the rounded corners slides off and falls on as flakes.
+   */
+  private slide(rect: DOMRect, ledge: Ledge) {
+    const caps = ledge.caps;
+    const n = caps.length;
+    for (let c = 0; c < n - 1; c++) {
+      const diff = caps[c] - caps[c + 1];
+      if (Math.abs(diff) > MAX_SLOPE) {
+        const move = (Math.abs(diff) - MAX_SLOPE) / 2 * Math.sign(diff);
+        caps[c] -= move;
+        caps[c + 1] += move;
+      }
+    }
+    const edgeCols = Math.min(Math.floor(n / 2), Math.ceil(ledge.radius / COL));
+    for (let c = 0; c < edgeCols; c++) {
+      ledge.spillLeft += caps[c];
+      ledge.spillRight += caps[n - 1 - c];
+      caps[c] = 0;
+      caps[n - 1 - c] = 0;
+    }
+    const corner = ledge.radius * .35;
+    for (; ledge.spillLeft > SPILL_PER_FLAKE; ledge.spillLeft -= SPILL_PER_FLAKE) {
+      this.flakes.push(this.slidingFlake(rect.left + corner, rect.top + corner, -1));
+    }
+    for (; ledge.spillRight > SPILL_PER_FLAKE; ledge.spillRight -= SPILL_PER_FLAKE) {
+      this.flakes.push(this.slidingFlake(rect.right - corner, rect.top + corner, 1));
+    }
+  }
+
+  /** A bit of snow sliding off a corner: leaves sideways, then falls. */
+  private slidingFlake(x: number, y: number, direction: number): Flake {
+    const f = this.flake(y, true);
+    f.x = x;
+    f.vx = direction * (1.2 + Math.random() * .8);
+    f.speed = .6 + Math.random() * .4;
+    f.r = 1 + Math.random() * 1.2;
+    return f;
+  }
+
   /** Lets a flake land on a ledge it just crossed; the pointer brushes snow off. Returns true if it landed. */
-  private settle(f: Flake, prevY: number, ledges: { rect: DOMRect, caps: Float32Array }[]) {
+  private settle(f: Flake, prevY: number, ledges: VisibleLedge[]) {
     const p = this.pointer;
     let landed = false;
-    for (const {rect, caps} of ledges) {
-      if (f.x < rect.left || f.x > rect.right) {
+    for (const {rect, ledge} of ledges) {
+      if (landed || f.x < rect.left || f.x > rect.right) {
+        continue;
+      }
+      const caps = ledge.caps;
+      const r = ledge.radius;
+      const fromEdge = Math.min(f.x - rect.left, rect.right - f.x);
+      if (fromEdge < r) {
+        // Rounded corner: the flake glances off outwards
+        const surface = rect.top + r - Math.sqrt(r * r - (r - fromEdge) * (r - fromEdge));
+        if (prevY < surface && f.y >= surface) {
+          f.vx += (f.x - rect.left < rect.right - f.x ? -1 : 1) * 1.2;
+          f.y = surface - .5;
+        }
         continue;
       }
       const col = Math.min(caps.length - 1, Math.floor((f.x - rect.left) / COL));
       const surface = rect.top - caps[col];
-      if (!landed && prevY < surface && f.y >= surface && Math.random() < SETTLE_CHANCE) {
+      if (prevY < surface && f.y >= surface && Math.random() < SETTLE_CHANCE) {
         for (let c = col - 2; c <= col + 2; c++) {
           if (c >= 0 && c < caps.length) {
             caps[c] = Math.min(MAX_CAP, caps[c] + f.r * (c === col ? .9 : .45));
@@ -224,12 +296,12 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
       }
     }
     if (p) {
-      for (const {rect, caps} of ledges) {
+      for (const {rect, ledge} of ledges) {
         if (p.x >= rect.left && p.x <= rect.right && Math.abs(p.y - rect.top) < 12) {
           const col = Math.floor((p.x - rect.left) / COL);
           for (let c = col - 4; c <= col + 4; c++) {
-            if (c >= 0 && c < caps.length) {
-              caps[c] *= .85;
+            if (c >= 0 && c < ledge.caps.length) {
+              ledge.caps[c] *= .85;
             }
           }
         }
@@ -238,21 +310,18 @@ export class SnowComponent implements AfterViewInit, OnDestroy {
     return landed;
   }
 
-  private drawCaps(ctx: CanvasRenderingContext2D, ledges: { rect: DOMRect, caps: Float32Array }[]) {
+  private drawCaps(ctx: CanvasRenderingContext2D, ledges: VisibleLedge[]) {
     ctx.fillStyle = 'rgba(255, 255, 255, .97)';
     ctx.shadowColor = 'rgba(16, 55, 47, .25)';
     ctx.shadowBlur = 2;
     ctx.beginPath();
-    for (const {rect, caps} of ledges) {
+    for (const {rect, ledge: {caps}} of ledges) {
       const top = rect.top + 1;
       ctx.moveTo(rect.left, top);
       for (let c = 0; c < caps.length; c++) {
         const x = Math.min(rect.right, rect.left + c * COL);
-        // Taper towards the corners so the snow sits on the rounded edges
-        const edge = Math.min(x - rect.left, rect.right - x);
-        const taper = Math.min(1, edge / 10);
         const smooth = (caps[Math.max(0, c - 1)] + caps[c] * 2 + caps[Math.min(caps.length - 1, c + 1)]) / 4;
-        ctx.lineTo(x, top - smooth * taper);
+        ctx.lineTo(x, top - smooth);
       }
       ctx.lineTo(rect.right, top);
       ctx.closePath();
