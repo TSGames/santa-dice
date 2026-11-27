@@ -2,6 +2,7 @@ import { Component, OnDestroy } from '@angular/core';
 import { Router } from '@angular/router';
 import { map } from 'rxjs';
 import { ApiService, Day, shuffle } from '../api.service';
+import { FxService } from '../fx/fx.service';
 
 /** Duration of the door opening animation before navigating. */
 const OPEN_MS = 750;
@@ -26,7 +27,7 @@ export class CalendarComponent implements OnDestroy {
     doors: this.order.map((n) => c.days.find((d) => d.day === n)!).filter(Boolean),
   }));
 
-  constructor(public api: ApiService, private router: Router) {
+  constructor(public api: ApiService, private router: Router, public fx: FxService) {
   }
 
   ngOnDestroy() {

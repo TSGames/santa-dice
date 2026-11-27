@@ -1,9 +1,11 @@
-import { Component, OnDestroy } from '@angular/core';
+import { Component, OnDestroy, ViewChild } from '@angular/core';
 import { ActivatedRoute } from '@angular/router';
 import { combineLatest, Subscription } from 'rxjs';
 import { ApiService, Calendar, Day, Item, Round } from '../api.service';
 import { LAND_MS } from '../die.component';
 import { SnowService } from '../snow.service';
+import { Dice3dComponent } from '../fx/dice3d.component';
+import { FxService } from '../fx/fx.service';
 
 export interface RankedRoll {
   name: string;
@@ -62,6 +64,10 @@ export class DoorComponent implements OnDestroy {
   available: Item[] | null = null;
   selectedItem: Item | null = null;
 
+  /** Physical 3D dice instead of the CSS dice (WebGL only, falls back on any error). */
+  use3d: boolean;
+  @ViewChild('dice3d') dice3d?: Dice3dComponent;
+
   /** Würfe anderer, die gerade live gezeigt werden. */
   liveRolls: LiveRoll[] = [];
   /** Bereits bekannte Würfe als "tag:runde:name"; null = noch nicht initialisiert. */
@@ -74,9 +80,12 @@ export class DoorComponent implements OnDestroy {
   revealing = false;
   private seen: { day: number, revealed: boolean } | null = null;
   private sub: Subscription;
+  private fxSub: Subscription;
 
-  constructor(public api: ApiService, route: ActivatedRoute, private snow: SnowService) {
+  constructor(public api: ApiService, route: ActivatedRoute, private snow: SnowService, fx: FxService) {
     this.nameInput = api.name;
+    this.use3d = fx.enabled;
+    this.fxSub = fx.enabled$.subscribe((on) => !on && (this.use3d = false));
     this.sub = combineLatest([route.paramMap, api.calendar$]).subscribe(([params, calendar]) => {
       const dayNumber = Number(params.get('day'));
       this.calendar = calendar;
@@ -86,6 +95,7 @@ export class DoorComponent implements OnDestroy {
 
   ngOnDestroy() {
     this.sub.unsubscribe();
+    this.fxSub.unsubscribe();
     this.liveTimers.forEach(clearTimeout);
   }
 
@@ -152,11 +162,25 @@ export class DoorComponent implements OnDestroy {
     this.myRoll = null;
     this.shownSum = null;
     const started = Date.now();
+    const dice3d = this.use3d ? this.dice3d : undefined;
+    dice3d?.shake();
     try {
       const {roll} = await this.api.roll(this.day.day, this.me);
-      await sleep(Math.max(0, 1600 - (Date.now() - started)));
-      this.myRoll = roll;
-      await sleep(LAND_MS + 250);
+      await sleep(Math.max(0, (dice3d ? 700 : 1600) - (Date.now() - started)));
+      let landed = false;
+      if (dice3d) {
+        try {
+          await dice3d.throw(roll);
+          await sleep(600);
+          landed = true;
+        } catch {
+          this.use3d = false;
+        }
+      }
+      if (!landed) {
+        this.myRoll = roll;
+        await sleep(LAND_MS + 250);
+      }
       this.isDicing = false;
       this.myRoll = null;
       await this.api.refresh();

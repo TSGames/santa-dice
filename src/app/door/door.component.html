@@ -71,10 +71,13 @@
     <section class="card hero mine" *ngIf="canRoll || isDicing">
       <h2>{{isTiebreak ? 'Stechen – du bist dran' : 'Du bist dran'}}</h2>
       <div class=mine-name>{{me}}</div>
-      <div class=big-dice>
-        <app-die [value]="myRoll?.[0] ?? null" [rolling]="isDicing" [size]="76"></app-die>
-        <app-die [value]="myRoll?.[1] ?? null" [rolling]="isDicing" [size]="76" [delay]="120"></app-die>
-      </div>
+      <app-dice-3d #dice3d *ngIf="use3d; else cssDice" (failed)="use3d = false"></app-dice-3d>
+      <ng-template #cssDice>
+        <div class=big-dice>
+          <app-die [value]="myRoll?.[0] ?? null" [rolling]="isDicing" [size]="76"></app-die>
+          <app-die [value]="myRoll?.[1] ?? null" [rolling]="isDicing" [size]="76" [delay]="120"></app-die>
+        </div>
+      </ng-template>
       <button mat-raised-button color="primary" class=roll-button (click)="roll()" [disabled]="isDicing">
         {{isDicing ? 'Würfelt …' : 'Würfeln!'}}
       </button>

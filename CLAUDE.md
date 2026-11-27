@@ -14,6 +14,7 @@ Technische Leitplanken für dieses Projekt. Die fachliche Spezifikation des lauf
   - `ApiService`: alle API-Aufrufe, Polling des Kalenders (2 s), Name und Admin-Token im `localStorage`.
   - `CalendarComponent`, `DoorComponent`, `AdminComponent`: die drei Seiten.
   - `DieComponent`: 3D-Würfel (wiederverwenden), `SnowComponent`: Schnee als Canvas außerhalb der Change Detection, vor dem Inhalt. Weicht dem Mauszeiger aus, bleibt auf Elementen mit `data-snow` und `.card` liegen (wegwischbar), `SnowService.boost()` lässt es kurz stärker schneien (beim Würfeln).
+  - WebGL-Effekte (`src/app/fx/`), nur als Zusatz: `FxService` schaltet sie nur bei schnellem WebGL ein (nicht bei „Bewegung reduzieren“, Software-Rendering, schwachem Gerät) und bei Kontextverlust, Fehlern oder dauerhaft niedriger Bildrate wieder ab. Dann gilt überall die normale Variante. `AuroraComponent` (Polarlicht hinter dem Inhalt) und `FrostComponent` (Eis auf gesperrten Türchen, wegwischbar, taut beim Öffnen) in reinem WebGL. `Dice3dComponent` (Würfel mit Physik, landen auf dem Server-Ergebnis) und `TreeComponent` (Baum mit einer Kugel je geöffnetem Türchen) nutzen `three` und `cannon-es`, die erst bei Bedarf nachgeladen werden. Zum Testen erzwingen: `localStorage.fx = 'on'` bzw. `'off'`.
 - Backend: eine Datei `src/api.php`, Daten als JSON in `DATA_DIR` (Default `.`, im Docker-Image `/data`). Eine gemeinsame Lock-Datei `.lock` (`flock`, lesen geteilt, schreiben exklusiv), geänderte Dateien werden atomar geschrieben (Temp-Datei + `rename`).
 - Deployment: `Dockerfile` (php:8.3-apache), GitHub Actions (`.github/workflows/docker.yml`) pusht das Image nach ghcr.io.
 
@@ -30,7 +31,7 @@ Das Dev-Backend setzt „heute“ fest auf `2026-12-08` (`FAKE_TODAY`, überschr
 
 `dev/seed.json` deckt alle Türchen-Zustände ab (entschieden und freigegeben, nach Stechen entschieden, Gewinner*in fest aber Preis noch nicht freigegeben (Türchen 3), Gleichstand, eindeutig wartend, laufend, heute, gesperrt). Bei Änderungen am Datenmodell mitpflegen.
 
-E2E-Tests (Playwright, `e2e/`): `npm run e2e` baut für Production und testet gegen `php -S` mit eigenem Datenverzeichnis `e2e/.data` (bei jedem Start geleert, „heute“ = `2026-12-08`). Abgedeckt: kompletter Ablauf mit 10 Teilnehmenden in parallelen Browsern, parallele API-Zugriffe (Lock, doppelte Würfe, doppelte Auswahl), Stechen, Admin-Override, Admin-Token, Upload-Limit. In der CI laufen sie vor dem Docker-Build.
+E2E-Tests (Playwright, `e2e/`): `npm run e2e` baut für Production und testet gegen `php -S` mit eigenem Datenverzeichnis `e2e/.data` (bei jedem Start geleert, „heute“ = `2026-12-08`). Abgedeckt: kompletter Ablauf mit 10 Teilnehmenden in parallelen Browsern, WebGL-Effekte an (erzwungen) und aus (Rückfall), parallele API-Zugriffe (Lock, doppelte Würfe, doppelte Auswahl), Stechen, Admin-Override, Admin-Token, Upload-Limit. In der CI laufen sie vor dem Docker-Build.
 
 `ng build` baut standardmäßig für Production. Nur dieser Build kopiert `api.php` nach `dist/`.
 

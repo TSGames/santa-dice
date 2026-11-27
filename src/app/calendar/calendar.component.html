@@ -4,11 +4,14 @@
       <h1>OER-Adventskalender</h1>
       <p class=subtitle>Kleine Überraschungen für eine große Community</p>
     </div>
+    <app-tree *ngIf="fx.enabled$ | async; else decoSvg" class="deco tree" [count]="(view$ | async)?.openUntil ?? 0"></app-tree>
+    <ng-template #decoSvg>
     <svg class=deco viewBox="0 0 120 50" aria-hidden="true">
       <g class=deco-branch><path d="M6 44 L70 8"/><path d="M16 38 l-3 -9 M16 38 l8 3 M26 32.5 l-3 -9 M26 32.5 l8 3 M36 27 l-3 -9 M36 27 l8 3 M46 21.5 l-3 -9 M46 21.5 l8 3 M56 16 l-3 -9 M56 16 l8 3"/></g>
       <polygon class=deco-star points="104,4 106.4,9.6 112.4,10 107.8,13.9 109.2,19.8 104,16.6 98.8,19.8 100.2,13.9 95.6,10 101.6,9.6" />
       <polygon class=deco-star points="88,30 89.2,32.8 92.2,33 89.9,35 90.6,37.9 88,36.3 85.4,37.9 86.1,35 83.8,33 86.8,32.8" />
     </svg>
+    </ng-template>
   </header>
   <hr>
 
@@ -19,7 +22,7 @@
       <ng-container *ngFor="let d of view.doors; trackBy: trackByDay">
         <a *ngIf="d.open; else lockedDoor" class=door [href]="'#/tuer/' + d.day" (click)="open($event, d.day)"
            [class.today]="d.day === view.openUntil" [class.decided]="!!d.winner" [class.revealed]="d.revealed"
-           [class.opening]="opening === d.day" [attr.aria-label]="'Türchen ' + d.day" data-snow>
+           [class.opening]="opening === d.day" [attr.aria-label]="'Türchen ' + d.day" [attr.data-day]="d.day" data-snow>
           <span class=inside aria-hidden="true"><span class=inside-glow></span><span class=inside-star>★</span></span>
           <div class=leaf>
           <app-door-tile [day]="d.day"></app-door-tile>
@@ -37,7 +40,7 @@
           </div>
         </a>
         <ng-template #lockedDoor>
-          <div class="door locked" role=button tabindex=0 data-snow
+          <div class="door locked" role=button tabindex=0 data-snow [attr.data-day]="d.day"
                [class.shake]="nudged?.day === d.day && nudged?.shake"
                (click)="nudge(d.day, view.today)" (keydown.enter)="nudge(d.day, view.today)"
                [attr.aria-label]="'Türchen ' + d.day + ', noch geschlossen'">
@@ -50,6 +53,8 @@
     </div>
   </ng-container>
   <ng-template #loading><p class=hint>Lade Kalender …</p></ng-template>
+
+  <app-frost *ngIf="fx.enabled$ | async"></app-frost>
 
   <footer class=foot>edu-sharing.net e.V. und metaVentis wünschen eine magische Weihnachtszeit</footer>
 </section>
